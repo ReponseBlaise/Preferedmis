@@ -8,8 +8,16 @@ const pool = require('./config/database');
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: [
+    'https://preferedmisui.vercel.app',
+    'https://preferedmisui-n3cdqtbwn-mushimiyumukiza-blaises-projects.vercel.app',
+    /\.vercel\.app$/,
+    'http://localhost:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
