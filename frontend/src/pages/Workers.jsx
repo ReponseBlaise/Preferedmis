@@ -579,8 +579,7 @@ const Workers = () => {
                 </>
               )}
 
-              <div className="flex gap-4">
-                <button type="submit" className="btn-primary flex-1">{t('save')}</button>
+              <div className="flex justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
@@ -588,6 +587,7 @@ const Workers = () => {
                 >
                   {t('cancel')}
                 </button>
+                <button type="submit" className="btn-primary flex-1">{t('save')}</button>
               </div>
             </form>
           </div>

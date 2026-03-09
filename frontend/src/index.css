@@ -178,9 +178,13 @@
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6;
   }
 
-  /* Form group */
-  .form-group {
-    @apply mb-4;
+  /* Form buttons layout */
+  .form-buttons {
+    @apply flex items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200;
+  }
+  
+  .form-buttons-reverse {
+    @apply flex items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200 flex-row-reverse;
   }
   
   .form-label {
