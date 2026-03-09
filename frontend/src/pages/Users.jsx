@@ -372,6 +372,20 @@ const Users = () => {
                 </div>
               )}
 
+              {editingUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">New Password (leave blank to keep current)</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    minLength="6"
+                    placeholder="Enter new password or leave blank"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <input

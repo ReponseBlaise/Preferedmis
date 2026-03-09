@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { attendanceAPI, workerAPI, projectAPI, reportAPI } from '../services/api';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Check, X, FileSpreadsheet, FileText, CheckSquare, Square } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -10,7 +10,7 @@ const Attendance = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [attendanceRecords, setAttendanceRecords] = useState({});
+  const [attendance, setAttendance] = useState({});
   const [showPayroll, setShowPayroll] = useState(false);
   const [payrollData, setPayrollData] = useState(null);
   const [dateRange, setDateRange] = useState({
@@ -44,41 +44,77 @@ const Attendance = () => {
   const fetchWorkers = async () => {
     try {
       const response = await workerAPI.getAll({ project_id: selectedProject, is_active: true });
-      // Filter out monthly employees - they don't record attendance
       const dailyWorkers = (response.data || []).filter(w => w.payment_type === 'daily');
       setWorkers(dailyWorkers);
+      
+      // Initialize attendance with all workers present (1.0)
+      const initialAttendance = {};
+      dailyWorkers.forEach(w => {
+        initialAttendance[w.id] = { present: true, days: 1.0, comment: '' };
+      });
+      setAttendance(initialAttendance);
     } catch (error) {
       toast.error('Failed to load workers');
     }
   };
 
-  const handleAttendanceChange = (workerId, field, value) => {
-    setAttendanceRecords(prev => ({
+  const togglePresent = (workerId) => {
+    setAttendance(prev => ({
       ...prev,
       [workerId]: {
         ...prev[workerId],
-        [field]: value
+        present: !prev[workerId]?.present,
+        days: !prev[workerId]?.present ? 1.0 : 0
       }
     }));
   };
 
-  const handleSubmitAttendance = async () => {
-    try {
-      const promises = Object.entries(attendanceRecords).map(([workerId, data]) => {
-        if (data.days_worked !== undefined) {
-          return attendanceAPI.record({
-            worker_id: workerId,
-            project_id: selectedProject,
-            attendance_date: selectedDate,
-            days_worked: parseFloat(data.days_worked),
-            comment: data.comment || ''
-          });
-        }
-      });
+  const setDays = (workerId, days) => {
+    setAttendance(prev => ({
+      ...prev,
+      [workerId]: {
+        ...prev[workerId],
+        days: parseFloat(days),
+        present: parseFloat(days) > 0
+      }
+    }));
+  };
 
-      await Promise.all(promises.filter(Boolean));
-      toast.success('Attendance recorded successfully');
-      setAttendanceRecords({});
+  const markAllPresent = () => {
+    const updated = {};
+    workers.forEach(w => {
+      updated[w.id] = { present: true, days: 1.0, comment: '' };
+    });
+    setAttendance(updated);
+  };
+
+  const markAllAbsent = () => {
+    const updated = {};
+    workers.forEach(w => {
+      updated[w.id] = { present: false, days: 0, comment: '' };
+    });
+    setAttendance(updated);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const records = Object.entries(attendance)
+        .filter(([_, data]) => data.present && data.days > 0)
+        .map(([workerId, data]) => ({
+          worker_id: workerId,
+          project_id: selectedProject,
+          attendance_date: selectedDate,
+          days_worked: data.days,
+          comment: data.comment || ''
+        }));
+
+      if (records.length === 0) {
+        toast.error('No attendance to record');
+        return;
+      }
+
+      await Promise.all(records.map(r => attendanceAPI.record(r)));
+      toast.success(`Attendance recorded for ${records.length} worker(s)`);
     } catch (error) {
       toast.error('Failed to record attendance');
     }
@@ -116,6 +152,8 @@ const Attendance = () => {
     }
   };
 
+  const presentCount = Object.values(attendance).filter(a => a.present).length;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -127,73 +165,125 @@ const Attendance = () => {
 
       {!showPayroll ? (
         <div className="card">
-          <div className="flex gap-4 mb-6">
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="input-field flex-1"
-            >
-              {projects.map(project => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {projects.map(project => (
+                  <button
+                    key={project.id}
+                    onClick={() => setSelectedProject(project.id)}
+                    className={`px-4 py-3 rounded-lg border-2 transition-all text-left ${
+                      selectedProject === project.id
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+                    }`}
+                  >
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="input-field"
+              className="input-field max-w-xs"
             />
           </div>
 
-          {/* Info message about monthly employees */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Only daily workers are shown here. Monthly employees do not record daily attendance and are paid their fixed salary during payroll.
+              <strong>Quick Tip:</strong> All workers are marked present by default. Uncheck absent workers or adjust partial days (0.25, 0.5, 0.75).
             </p>
           </div>
 
-          <div className="space-y-4">
-            {workers.map(worker => (
-              <div key={worker.id} className="border rounded-lg p-4 flex items-center gap-4">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{worker.full_name}</h4>
-                  <p className="text-sm text-gray-600">{worker.position} - {worker.rate_per_day} RWF/day</p>
-                </div>
-
-                <div className="flex gap-4 items-center">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">{t('daysWorked')}</label>
-                    <input
-                      type="number"
-                      step="0.25"
-                      min="0"
-                      max="1"
-                      placeholder="1.0"
-                      value={attendanceRecords[worker.id]?.days_worked || ''}
-                      onChange={(e) => handleAttendanceChange(worker.id, 'days_worked', e.target.value)}
-                      className="input-field w-24"
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block text-sm text-gray-600 mb-1">{t('comment')}</label>
-                    <input
-                      type="text"
-                      placeholder="Optional comment"
-                      value={attendanceRecords[worker.id]?.comment || ''}
-                      onChange={(e) => handleAttendanceChange(worker.id, 'comment', e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex gap-2 mb-4">
+            <button onClick={markAllPresent} className="btn-secondary flex items-center gap-2">
+              <CheckSquare size={18} />
+              Mark All Present
+            </button>
+            <button onClick={markAllAbsent} className="btn-outline flex items-center gap-2">
+              <Square size={18} />
+              Mark All Absent
+            </button>
+            <div className="ml-auto text-sm text-gray-600 flex items-center">
+              Present: <span className="font-bold text-green-600 ml-1">{presentCount}/{workers.length}</span>
+            </div>
           </div>
 
-          <button onClick={handleSubmitAttendance} className="btn-primary mt-6 w-full">
-            {t('submit')}
-          </button>
+          <div className="space-y-2">
+            {workers.map(worker => {
+              const isPresent = attendance[worker.id]?.present;
+              return (
+                <div key={worker.id} className={`border rounded-lg p-3 flex items-center gap-3 transition-colors ${
+                  isPresent ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <button
+                    onClick={() => togglePresent(worker.id)}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      isPresent ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    {isPresent ? <Check size={24} /> : <X size={24} />}
+                  </button>
+
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">{worker.full_name}</h4>
+                    <p className="text-sm text-gray-600">{worker.position} - {worker.rate_per_day} RWF/day</p>
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Days</label>
+                      <select
+                        value={attendance[worker.id]?.days || 1.0}
+                        onChange={(e) => setDays(worker.id, e.target.value)}
+                        className="input-field w-20 text-sm"
+                        disabled={!isPresent}
+                      >
+                        <option value="0.25">0.25</option>
+                        <option value="0.5">0.5</option>
+                        <option value="0.75">0.75</option>
+                        <option value="1.0">1.0</option>
+                      </select>
+                    </div>
+
+                    <div className="w-48 hidden md:block">
+                      <label className="block text-xs text-gray-600 mb-1">Comment</label>
+                      <input
+                        type="text"
+                        placeholder="Optional"
+                        value={attendance[worker.id]?.comment || ''}
+                        onChange={(e) => setAttendance(prev => ({
+                          ...prev,
+                          [worker.id]: { ...prev[worker.id], comment: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        disabled={!isPresent}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {workers.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No daily workers found for this project
+            </div>
+          )}
+
+          {workers.length > 0 && (
+            <button onClick={handleSubmit} className="btn-primary mt-6 w-full">
+              Submit Attendance ({presentCount} present)
+            </button>
+          )}
         </div>
       ) : (
         <div className="card">
