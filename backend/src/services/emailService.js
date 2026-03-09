@@ -26,6 +26,14 @@ transporter.verify((error, success) => {
 });
 
 exports.sendEmail = async (to, subject, html) => {
+  console.log('Attempting to send email to:', to);
+  console.log('SMTP Config:', {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+    from: process.env.EMAIL_FROM
+  });
+  
   try {
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Preferred Contractors'}" <${process.env.EMAIL_FROM}>`,
@@ -33,11 +41,11 @@ exports.sendEmail = async (to, subject, html) => {
       subject,
       html
     });
-    console.log('Email sent successfully:', info.messageId);
+    console.log('✅ Email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email sending failed:', error.message);
-    // Don't throw error - return failure status instead
+    console.error('❌ Email sending failed:', error.message);
+    console.error('Error details:', error);
     return { success: false, error: error.message };
   }
 };
