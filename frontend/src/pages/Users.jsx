@@ -183,19 +183,58 @@ const Users = () => {
   if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h1 className="text-xl md:text-3xl font-bold text-gray-800">User Management</h1>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          className="btn-primary w-full sm:w-auto"
         >
           <Plus size={20} />
           Add User
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {users.map((user) => {
+          const isDeleted = user.full_name?.startsWith('[DELETED]');
+          return (
+            <div key={user.id} className={`card ${isDeleted ? 'opacity-60' : ''}`}>
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{user.full_name}</h3>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <p className="text-sm text-gray-500">{user.phone || '-'}</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`badge ${getRoleBadge(user.role)}`}>{user.role}</span>
+                  <span className={`badge ${user.is_active ? 'badge-success' : 'badge-danger'}`}>
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2 border-t">
+                <button onClick={() => handleEdit(user)} className="icon-button-primary" disabled={isDeleted}>
+                  <Edit2 size={18} />
+                </button>
+                <button onClick={() => openPasswordModal(user)} className="icon-button" disabled={isDeleted}>
+                  <Key size={18} />
+                </button>
+                <button onClick={() => handleToggleStatus(user)} className="icon-button" disabled={isDeleted}>
+                  {user.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
+                </button>
+                <button onClick={() => handleDelete(user.id)} className="icon-button-danger" disabled={isDeleted}>
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block table-container">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -291,8 +330,8 @@ const Users = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="modal-overlay">
+          <div className="modal-content p-4 md:p-6">
             <h2 className="text-2xl font-bold mb-4">
               {editingUser ? 'Edit User' : 'Add New User'}
             </h2>
