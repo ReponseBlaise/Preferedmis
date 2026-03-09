@@ -12,6 +12,8 @@ import Projects from './pages/Projects';
 import Messages from './pages/Messages';
 import Users from './pages/Users';
 import AuditLogs from './pages/AuditLogs';
+import Documents from './pages/Documents';
+import PublicUpdates from './pages/PublicUpdates';
 import './i18n';
 
 const PrivateRoute = ({ children, roles }) => {
@@ -46,6 +48,8 @@ function App() {
             <Route path="messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
             <Route path="users" element={<PrivateRoute roles={['manager']}><Users /></PrivateRoute>} />
             <Route path="audit" element={<PrivateRoute roles={['manager']}><AuditLogs /></PrivateRoute>} />
+            <Route path="documents" element={<PrivateRoute roles={['manager', 'employee', 'storeman']}><Documents /></PrivateRoute>} />
+            <Route path="updates" element={<PrivateRoute roles={['manager', 'employee', 'storeman']}><PublicUpdates /></PrivateRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

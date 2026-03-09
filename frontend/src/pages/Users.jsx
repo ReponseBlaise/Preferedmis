@@ -96,13 +96,31 @@ const Users = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    const userToDelete = users.find(u => u.id === id);
+    if (!window.confirm(`Are you sure you want to delete user "${userToDelete?.full_name}"?\n\nNote: If the user has associated data (messages, attendance records, etc.), they will be deactivated instead of deleted to preserve data integrity.`)) return;
+    
     try {
-      await api.delete(`/auth/users/${id}`);
-      toast.success('User deleted successfully');
+      const response = await api.delete(`/auth/users/${id}`);
+      
+      if (response.data.deactivated) {
+        toast.success(
+          `User deactivated (has dependencies: ${response.data.dependencies.join(', ')})`,
+          {
+            duration: 5000,
+            icon: '⚠️'
+          }
+        );
+      } else {
+        toast.success('User deleted successfully');
+      }
+      
       fetchUsers();
     } catch (error) {
-      toast.error('Failed to delete user');
+      toast.error(
+        error.response?.data?.details || 
+        error.response?.data?.error || 
+        'Failed to delete user'
+      );
     }
   };
 
@@ -190,15 +208,19 @@ const Users = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+            {users.map((user) => {
+              const isDeleted = user.full_name?.startsWith('[DELETED]');
+              return (
+              <tr key={user.id} className={`hover:bg-gray-50 ${isDeleted ? 'bg-gray-100 opacity-70' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium text-gray-900">{user.full_name}</div>
+                  <div className={`font-medium ${isDeleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                    {isDeleted ? user.full_name.replace(/\[DELETED\] [a-f0-9-]+\s*/, '[DELETED] ') : user.full_name}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDeleted ? 'text-gray-400' : 'text-gray-600'}`}>
                   {user.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDeleted ? 'text-gray-400' : 'text-gray-600'}`}>
                   {user.phone || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -217,36 +239,46 @@ const Users = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Edit"
+                      className={`text-blue-600 hover:text-blue-800 ${isDeleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title={isDeleted ? "Cannot edit deleted user" : "Edit"}
+                      disabled={isDeleted}
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => openPasswordModal(user)}
-                      className="text-purple-600 hover:text-purple-800"
-                      title="Reset Password"
+                      className={`text-purple-600 hover:text-purple-800 ${isDeleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title={isDeleted ? "Cannot reset password for deleted user" : "Reset Password"}
+                      disabled={isDeleted}
                     >
                       <Key size={18} />
                     </button>
                     <button
                       onClick={() => handleToggleStatus(user)}
-                      className={user.is_active ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'}
-                      title={user.is_active ? 'Deactivate' : 'Activate'}
+                      className={`${
+                        isDeleted 
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : user.is_active 
+                            ? 'text-orange-600 hover:text-orange-800' 
+                            : 'text-green-600 hover:text-green-800'
+                      }`}
+                      title={isDeleted ? "Cannot change status of deleted user" : user.is_active ? 'Deactivate' : 'Activate'}
+                      disabled={isDeleted}
                     >
                       {user.is_active ? <UserX size={18} /> : <UserCheck size={18} />}
                     </button>
                     <button
                       onClick={() => handleDelete(user.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete"
+                      className={`text-red-600 hover:text-red-800 ${isDeleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title={isDeleted ? "Already deactivated" : "Delete"}
+                      disabled={isDeleted}
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
 

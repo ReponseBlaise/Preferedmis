@@ -10,9 +10,21 @@ const messageController = require('../controllers/messageController');
 const dashboardController = require('../controllers/dashboardController');
 const reportController = require('../controllers/reportController');
 const auditController = require('../controllers/auditController');
+const notificationController = require('../controllers/notificationController');
+const documentController = require('../controllers/documentController');
+const publicUpdateController = require('../controllers/publicUpdateController');
 const { auth, authorize } = require('../middleware/auth');
 const auditLog = require('../middleware/audit');
 const getUserProjects = require('../middleware/projectAccess');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Auth routes
 router.post('/auth/register', auth, authorize('manager'), authController.register);
@@ -62,7 +74,17 @@ router.get('/projects/:id/members', auth, getUserProjects, projectController.get
 // Message routes
 router.post('/messages', auth, auditLog('CREATE', 'messages'), messageController.sendMessage);
 router.get('/messages', auth, messageController.getMessages);
+router.get('/messages/conversations', auth, messageController.getConversations);
+router.get('/messages/unread-count', auth, messageController.getUnreadCount);
+router.put('/messages/mark-all-read', auth, messageController.markAllAsRead);
 router.put('/messages/:id/read', auth, messageController.markAsRead);
+router.put('/messages/:id', auth, auditLog('UPDATE', 'messages'), messageController.editMessage);
+router.delete('/messages/:id', auth, auditLog('DELETE', 'messages'), messageController.deleteMessage);
+router.post('/messages/:id/forward', auth, messageController.forwardMessage);
+router.post('/messages/:id/attachments', auth, upload.single('file'), messageController.uploadAttachment);
+router.post('/messages/:id/attachments/add', auth, messageController.addAttachmentToMessage);
+router.get('/messages/:id/attachments', auth, messageController.getMessageAttachments);
+router.delete('/messages/:id/attachments/:attachmentId', auth, messageController.deleteAttachment);
 
 // Dashboard routes
 router.get('/dashboard', auth, getUserProjects, dashboardController.getDashboard);
@@ -74,5 +96,34 @@ router.get('/reports/inventory/excel', auth, reportController.exportInventoryExc
 
 // Audit routes
 router.get('/audit/logs', auth, authorize('manager'), auditController.getAuditLogs);
+
+// Notification routes
+router.post('/notifications/system-update', auth, authorize('manager'), notificationController.sendSystemUpdateToAll);
+router.post('/notifications/project-update', auth, getUserProjects, authorize('employee', 'manager'), notificationController.sendProjectUpdate);
+router.post('/notifications/task-assignment', auth, authorize('employee', 'manager'), notificationController.sendTaskAssignment);
+router.post('/notifications/custom', auth, authorize('manager'), notificationController.sendCustomNotification);
+router.post('/notifications/test', notificationController.testEmailConfig);
+router.get('/notifications', auth, notificationController.getUserNotifications);
+router.get('/notifications/unread-count', auth, notificationController.getUnreadCount);
+router.put('/notifications/:id/read', auth, notificationController.markNotificationAsRead);
+router.put('/notifications/read-all', auth, notificationController.markAllAsRead);
+router.delete('/notifications/:id', auth, notificationController.deleteNotification);
+
+// Document routes
+router.post('/documents', auth, upload.single('file'), documentController.uploadDocument);
+router.get('/documents', auth, documentController.getDocuments);
+router.get('/documents/shared', auth, documentController.getSharedDocuments);
+router.get('/documents/:id', auth, documentController.getDocument);
+router.get('/documents/:id/download', auth, documentController.downloadDocument);
+router.put('/documents/:id/share', auth, documentController.shareDocument);
+router.delete('/documents/:id/share', auth, documentController.unshareDocument);
+router.delete('/documents/:id', auth, documentController.deleteDocument);
+
+// Public updates routes
+router.post('/updates', auth, publicUpdateController.createPublicUpdate);
+router.get('/updates', auth, publicUpdateController.getPublicUpdates);
+router.get('/updates/:id', auth, publicUpdateController.getPublicUpdate);
+router.put('/updates/:id', auth, publicUpdateController.updatePublicUpdate);
+router.delete('/updates/:id', auth, publicUpdateController.deletePublicUpdate);
 
 module.exports = router;

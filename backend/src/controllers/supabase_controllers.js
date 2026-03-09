@@ -335,7 +335,7 @@ exports.dashboard = {
   getDashboard: async (req, res) => {
     try {
       const { project_id } = req.query;
-      
+
       // Determine which projects to query
       let projectIds = [];
       if (req.userProjects === 'all') {
@@ -400,7 +400,7 @@ exports.dashboard = {
         .select('amount')
         .in('project_id', projectIds);
 
-      const totalSpent = 
+      const totalSpent =
         (items?.reduce((sum, i) => sum + parseFloat(i.total_price || 0), 0) || 0) +
         (expenses?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0);
 
@@ -408,7 +408,7 @@ exports.dashboard = {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
       const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-      
+
       const { data: monthAttendance } = await supabaseAdmin
         .from('attendance')
         .select(`
@@ -431,6 +431,76 @@ exports.dashboard = {
         .eq('receiver_id', req.user.id)
         .eq('is_read', false);
 
+      // Get recent activities from audit_logs (last 10)
+      // Filter by relevant tables for the user's projects
+      const { data: recentActivities } = await supabaseAdmin
+        .from('audit_logs')
+        .select(`
+          *,
+          users:user_id (
+            full_name,
+            email
+          )
+        `)
+        .in('table_name', ['projects', 'workers', 'attendance', 'inventory_items', 'expenses', 'messages'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const formattedActivities = recentActivities?.map(log => ({
+        id: log.id,
+        action: log.action,
+        user_name: log.users?.full_name || log.users?.email || 'Unknown',
+        table_name: log.table_name,
+        created_at: log.created_at
+      })) || [];
+
+      // Get expenses by type
+      const { data: allExpenses } = await supabaseAdmin
+        .from('expenses')
+        .select('expense_type, amount')
+        .in('project_id', projectIds);
+
+      const expensesByTypeMap = {};
+      allExpenses?.forEach(exp => {
+        const type = exp.expense_type || 'Uncategorized';
+        if (!expensesByTypeMap[type]) {
+          expensesByTypeMap[type] = { expense_type: type, total: 0 };
+        }
+        expensesByTypeMap[type].total += parseFloat(exp.amount || 0);
+      });
+
+      const expensesByType = Object.values(expensesByTypeMap);
+
+      // Get attendance trend for last 7 days
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        last7Days.push(dateStr);
+      }
+
+      const { data: attendanceData } = await supabaseAdmin
+        .from('attendance')
+        .select('attendance_date, worker_id')
+        .in('project_id', projectIds)
+        .in('attendance_date', last7Days);
+
+      const attendanceTrendMap = {};
+      last7Days.forEach(dateStr => {
+        attendanceTrendMap[dateStr] = { attendance_date: dateStr, workers_present: 0 };
+      });
+
+      attendanceData?.forEach(att => {
+        if (attendanceTrendMap[att.attendance_date]) {
+          attendanceTrendMap[att.attendance_date].workers_present++;
+        }
+      });
+
+      const attendanceTrend = Object.values(attendanceTrendMap).sort(
+        (a, b) => new Date(a.attendance_date) - new Date(b.attendance_date)
+      );
+
       res.json({
         stats: {
           active_projects: projectsCount || 0,
@@ -440,9 +510,9 @@ exports.dashboard = {
           current_month_payroll: currentMonthPayroll,
           unread_messages: unreadMessages || 0
         },
-        recent_activities: [],
-        expenses_by_type: [],
-        attendance_trend: []
+        recent_activities: formattedActivities,
+        expenses_by_type: expensesByType,
+        attendance_trend: attendanceTrend
       });
     } catch (error) {
       console.error('Dashboard error:', error);

@@ -184,21 +184,92 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    // Delete from Supabase Auth
-    await supabaseAdmin.auth.admin.deleteUser(req.params.id);
+    const userId = req.params.id;
 
-    // Delete from users table
+    // Check if user has any dependencies
+    const tablesToCheck = [
+      { table: 'messages', column: 'sender_id' },
+      { table: 'messages', column: 'receiver_id' },
+      { table: 'project_members', column: 'user_id' },
+      { table: 'attendance', column: 'recorded_by' },
+      { table: 'inventory_items', column: 'created_by' },
+      { table: 'expenses', column: 'created_by' },
+      { table: 'documents', column: 'owner_id' },
+      { table: 'document_shares', column: 'shared_by' },
+      { table: 'document_shares', column: 'shared_with' },
+      { table: 'public_updates', column: 'author_id' }
+    ];
+
+    const dependencies = [];
+
+    // Check for dependencies
+    for (const { table, column } of tablesToCheck) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from(table)
+          .select('id')
+          .eq(column, userId)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          dependencies.push(table);
+        }
+      } catch (err) {
+        // Table might not exist or column might not exist, continue
+      }
+    }
+
+    if (dependencies.length > 0) {
+      // Instead of hard delete, deactivate the user
+      // This is safer and maintains data integrity
+      const { error: deactiveError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          is_active: false,
+          full_name: `[DELETED] ${userId.substring(0, 8)}`,
+          phone: null
+        })
+        .eq('id', userId);
+
+      if (deactiveError) throw deactiveError;
+
+      // Try to delete from Supabase Auth (might fail if user doesn't exist)
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      } catch (authErr) {
+        console.log('Auth user deletion skipped or failed:', authErr.message);
+      }
+
+      return res.json({ 
+        message: 'User deactivated instead of deleted (user has data dependencies)',
+        deactivated: true,
+        dependencies: dependencies,
+        note: 'User data is preserved to maintain integrity of related records (messages, attendance, etc.)'
+      });
+    }
+
+    // No dependencies, proceed with hard delete
+    try {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+    } catch (authErr) {
+      console.log('Auth user deletion skipped:', authErr.message);
+    }
+
     const { error } = await supabaseAdmin
       .from('users')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', userId);
 
     if (error) throw error;
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
+    res.status(500).json({ 
+      error: 'Failed to delete user',
+      details: error.message,
+      code: error.code
+    });
   }
 };
 

@@ -63,48 +63,66 @@ const Dashboard = () => {
         {/* Expenses by Type */}
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Expenses by Type</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data?.expenses_by_type || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="expense_type" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="total" fill="#1e40af" />
-            </BarChart>
-          </ResponsiveContainer>
+          {data?.expenses_by_type && data.expenses_by_type.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data.expenses_by_type}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="expense_type" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="total" fill="#1e40af" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>No expense data available</p>
+            </div>
+          )}
         </div>
 
         {/* Attendance Trend */}
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Attendance Trend (Last 7 Days)</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data?.attendance_trend || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="attendance_date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="workers_present" stroke="#10b981" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          {data?.attendance_trend && data.attendance_trend.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data.attendance_trend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="attendance_date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="workers_present" stroke="#10b981" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>No attendance data available</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Recent Activities */}
       <div className="card">
         <h3 className="text-xl font-semibold mb-4">Recent Activities</h3>
-        <div className="space-y-3">
-          {data?.recent_activities?.slice(0, 5).map((activity, index) => (
-            <div key={index} className="flex items-center justify-between py-2 border-b">
-              <div>
-                <p className="font-medium">{activity.action}</p>
-                <p className="text-sm text-gray-600">{activity.user_name} - {activity.table_name}</p>
+        {data?.recent_activities && data.recent_activities.length > 0 ? (
+          <div className="space-y-3">
+            {data.recent_activities.slice(0, 5).map((activity, index) => (
+              <div key={index} className="flex items-center justify-between py-2 border-b">
+                <div>
+                  <p className="font-medium">{activity.action}</p>
+                  <p className="text-sm text-gray-600">{activity.user_name} - {activity.table_name}</p>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {new Date(activity.created_at).toLocaleString()}
+                </span>
               </div>
-              <span className="text-sm text-gray-500">
-                {new Date(activity.created_at).toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            <p>No recent activities</p>
+          </div>
+        )}
       </div>
     </div>
   );

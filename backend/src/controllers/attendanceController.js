@@ -18,6 +18,23 @@ exports.recordAttendance = async (req, res) => {
       return res.status(400).json({ error: 'Days worked must be between 0 and 1 (e.g., 0.25, 0.5, 0.75, 1.0)' });
     }
 
+    // Check if worker is a daily worker (monthly employees don't record attendance)
+    const { data: worker } = await supabaseAdmin
+      .from('workers')
+      .select('payment_type, full_name')
+      .eq('id', worker_id)
+      .single();
+
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+
+    if (worker.payment_type === 'monthly') {
+      return res.status(400).json({ 
+        error: `Cannot record attendance for monthly employee "${worker.full_name}". Monthly employees are paid fixed salary and do not record daily attendance.` 
+      });
+    }
+
     // Check if attendance exists
     const { data: existing } = await supabaseAdmin
       .from('attendance')
@@ -130,7 +147,7 @@ exports.getPayrollReport = async (req, res) => {
 
     if (workersError) throw workersError;
 
-    // Get attendance for date range
+    // Get attendance for date range (only for daily workers)
     const { data: attendance, error: attendanceError } = await supabaseAdmin
       .from('attendance')
       .select('worker_id, days_worked')
@@ -140,23 +157,76 @@ exports.getPayrollReport = async (req, res) => {
 
     if (attendanceError) throw attendanceError;
 
-    // Calculate payroll
-    const payrollData = workers.map(worker => {
-      const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
-      const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked), 0);
-      const total_amount = worker.rate_per_day * total_days_worked;
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
 
-      return {
-        worker_id: worker.id,
-        full_name: worker.full_name,
-        phone: worker.phone,
-        position: worker.position,
-        rate_per_day: worker.rate_per_day,
-        payment_type: worker.payment_type,
-        total_days_worked,
-        total_amount
-      };
-    });
+    // Calculate payroll
+    const payrollData = workers
+      .filter(worker => {
+        // For monthly employees, check if they were employed during the payroll period
+        if (worker.payment_type === 'monthly') {
+          const workerStart = worker.start_date ? new Date(worker.start_date) : startDate;
+          const workerEnd = worker.end_date ? new Date(worker.end_date) : null;
+          
+          // Include if: started before period end AND (still employed OR ended after period start)
+          return workerStart <= endDate && (!workerEnd || workerEnd >= startDate);
+        }
+        // Include all daily workers (they need attendance records)
+        return true;
+      })
+      .map(worker => {
+        if (worker.payment_type === 'monthly') {
+          // Monthly employee - calculate based on days employed in the period
+          const workerStart = worker.start_date ? new Date(worker.start_date) : startDate;
+          const workerEnd = worker.end_date ? new Date(worker.end_date) : endDate;
+          
+          // Calculate overlapping days
+          const effectiveStart = workerStart < startDate ? startDate : workerStart;
+          const effectiveEnd = workerEnd > endDate ? endDate : workerEnd;
+          
+          const totalDaysInPeriod = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          const daysEmployed = Math.floor((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1;
+          
+          // Prorate salary if not employed for full period
+          const salaryAmount = worker.monthly_salary || 0;
+          const proratedAmount = totalDaysInPeriod > 0 
+            ? (salaryAmount * daysEmployed) / totalDaysInPeriod 
+            : 0;
+
+          return {
+            worker_id: worker.id,
+            full_name: worker.full_name,
+            phone: worker.phone,
+            position: worker.position,
+            rate_per_day: null,
+            monthly_salary: worker.monthly_salary,
+            payment_type: worker.payment_type,
+            total_days_worked: daysEmployed,
+            total_days_in_period: totalDaysInPeriod,
+            total_amount: proratedAmount,
+            employment_status: worker.end_date ? 'ended' : 'active'
+          };
+        } else {
+          // Daily worker - calculate based on attendance
+          const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+          const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked), 0);
+          const total_amount = (worker.rate_per_day || 0) * total_days_worked;
+
+          return {
+            worker_id: worker.id,
+            full_name: worker.full_name,
+            phone: worker.phone,
+            position: worker.position,
+            rate_per_day: worker.rate_per_day,
+            monthly_salary: null,
+            payment_type: worker.payment_type,
+            total_days_worked,
+            total_days_in_period: null,
+            total_amount,
+            employment_status: worker.is_active ? 'active' : 'inactive'
+          };
+        }
+      });
 
     const totalPayroll = payrollData.reduce((sum, row) => sum + row.total_amount, 0);
 

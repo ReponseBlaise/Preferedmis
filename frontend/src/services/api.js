@@ -81,7 +81,19 @@ export const projectAPI = {
 export const messageAPI = {
   send: (data) => api.post('/messages', data),
   getAll: (params) => api.get('/messages', { params }),
-  markAsRead: (id) => api.put(`/messages/${id}/read`)
+  getConversations: () => api.get('/messages/conversations'),
+  getUnreadCount: () => api.get('/messages/unread-count'),
+  markAllAsRead: () => api.put('/messages/mark-all-read'),
+  markAsRead: (id) => api.put(`/messages/${id}/read`),
+  edit: (id, data) => api.put(`/messages/${id}`, data),
+  delete: (id) => api.delete(`/messages/${id}`),
+  forward: (id, data) => api.post(`/messages/${id}/forward`, data),
+  uploadAttachment: (id, formData) => api.post(`/messages/${id}/attachments`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  addAttachment: (id, data) => api.post(`/messages/${id}/attachments/add`, data),
+  getAttachments: (id) => api.get(`/messages/${id}/attachments`),
+  deleteAttachment: (id, attachmentId) => api.delete(`/messages/${id}/attachments/${attachmentId}`)
 };
 
 export const dashboardAPI = {
@@ -94,11 +106,46 @@ export const reportAPI = {
   exportInventoryExcel: (params) => api.get('/reports/inventory/excel', { params, responseType: 'blob' })
 };
 
+export const notificationAPI = {
+  test: (email) => api.post('/notifications/test', { email }),
+  sendSystemUpdate: (data) => api.post('/notifications/system-update', data),
+  sendProjectUpdate: (data) => api.post('/notifications/project-update', data),
+  sendTaskAssignment: (data) => api.post('/notifications/task-assignment', data),
+  sendCustom: (data) => api.post('/notifications/custom', data),
+  getAll: (params) => api.get('/notifications', { params }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`)
+};
+
+export const documentAPI = {
+  upload: (formData) => api.post('/documents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getAll: (params) => api.get('/documents', { params }),
+  getShared: () => api.get('/documents/shared'),
+  getOne: (id) => api.get(`/documents/${id}`),
+  download: (id) => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
+  share: (id, data) => api.put(`/documents/${id}/share`, data),
+  unshare: (id, data) => api.delete(`/documents/${id}/share`, { data }),
+  delete: (id) => api.delete(`/documents/${id}`)
+};
+
+export const updatesAPI = {
+  create: (data) => api.post('/updates', data),
+  getAll: (params) => api.get('/updates', { params }),
+  getOne: (id) => api.get(`/updates/${id}`),
+  update: (id, data) => api.put(`/updates/${id}`, data),
+  delete: (id) => api.delete(`/updates/${id}`)
+};
+
 export default {
   // Auth
   login: (credentials) => authAPI.login(credentials).then(res => res.data),
   register: (userData) => authAPI.register(userData).then(res => res.data),
   getProfile: () => authAPI.getProfile().then(res => res.data),
+  getUsers: () => api.get('/auth/users').then(res => res.data),
 
   // Workers
   createWorker: (data) => workerAPI.create(data).then(res => res.data),
@@ -147,6 +194,58 @@ export default {
   exportPayrollExcel: (params) => reportAPI.exportPayrollExcel(params),
   exportPayrollPDF: (params) => reportAPI.exportPayrollPDF(params),
   exportInventoryExcel: (params) => reportAPI.exportInventoryExcel(params),
+
+  // Notifications
+  testEmail: (email) => notificationAPI.test(email),
+  sendSystemUpdate: (data) => notificationAPI.sendSystemUpdate(data),
+  sendProjectUpdate: (data) => notificationAPI.sendProjectUpdate(data),
+  sendTaskAssignment: (data) => notificationAPI.sendTaskAssignment(data),
+  sendCustomNotification: (data) => notificationAPI.sendCustom(data),
+  notifications: {
+    getAll: (params) => notificationAPI.getAll(params).then(res => res.data),
+    getUnreadCount: () => notificationAPI.getUnreadCount().then(res => res.data),
+    markAsRead: (id) => notificationAPI.markAsRead(id).then(res => res.data),
+    markAllAsRead: () => notificationAPI.markAllAsRead().then(res => res.data),
+    delete: (id) => notificationAPI.delete(id).then(res => res.data)
+  },
+
+  // Documents
+  documents: {
+    upload: (formData) => documentAPI.upload(formData).then(res => res.data),
+    getAll: (params) => documentAPI.getAll(params).then(res => res.data),
+    getShared: () => documentAPI.getShared().then(res => res.data),
+    getOne: (id) => documentAPI.getOne(id).then(res => res.data),
+    download: (id) => documentAPI.download(id),
+    share: (id, data) => documentAPI.share(id, data).then(res => res.data),
+    unshare: (id, data) => documentAPI.unshare(id, data).then(res => res.data),
+    delete: (id) => documentAPI.delete(id).then(res => res.data)
+  },
+
+  // Public Updates
+  updates: {
+    create: (data) => updatesAPI.create(data).then(res => res.data),
+    getAll: (params) => updatesAPI.getAll(params).then(res => res.data),
+    getOne: (id) => updatesAPI.getOne(id).then(res => res.data),
+    update: (id, data) => updatesAPI.update(id, data).then(res => res.data),
+    delete: (id) => updatesAPI.delete(id).then(res => res.data)
+  },
+
+  // Messages
+  messages: {
+    send: (data) => messageAPI.send(data).then(res => res.data),
+    getAll: (params) => messageAPI.getAll(params).then(res => res.data),
+    getConversations: () => messageAPI.getConversations().then(res => res.data),
+    getUnreadCount: () => messageAPI.getUnreadCount().then(res => res.data),
+    markAllAsRead: () => messageAPI.markAllAsRead().then(res => res.data),
+    markAsRead: (id) => messageAPI.markAsRead(id).then(res => res.data),
+    edit: (id, data) => messageAPI.edit(id, data).then(res => res.data),
+    delete: (id) => messageAPI.delete(id).then(res => res.data),
+    forward: (id, data) => messageAPI.forward(id, data).then(res => res.data),
+    uploadAttachment: (id, formData) => messageAPI.uploadAttachment(id, formData).then(res => res.data),
+    addAttachment: (id, data) => messageAPI.addAttachment(id, data).then(res => res.data),
+    getAttachments: (id) => messageAPI.getAttachments(id).then(res => res.data),
+    deleteAttachment: (id, attachmentId) => messageAPI.deleteAttachment(id, attachmentId).then(res => res.data)
+  },
 
   // Direct axios instance for custom requests
   get: (url, config) => api.get(url, config),

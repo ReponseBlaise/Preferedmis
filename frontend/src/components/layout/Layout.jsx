@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { 
-  LayoutDashboard, Users, Calendar, Package, 
-  FolderKanban, MessageSquare, LogOut, Menu, X, UserCog, Shield 
+import {
+  LayoutDashboard, Users, Calendar, Package,
+  FolderKanban, MessageSquare, LogOut, Menu, X, UserCog, Shield,
+  Bell, FileText, Megaphone
 } from 'lucide-react';
+import NotificationCenter from '../NotificationCenter';
+import api from '../../services/api';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout, isManager, isEmployee, isStoreman } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.notifications.getUnreadCount();
+      setUnreadCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -27,6 +47,8 @@ const Layout = () => {
     { path: '/projects', icon: FolderKanban, label: t('projects'), roles: ['manager'] },
     { path: '/messages', icon: MessageSquare, label: t('messages'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/users', icon: UserCog, label: 'Users', roles: ['manager'] },
+    { path: '/documents', icon: FileText, label: t('documents'), roles: ['manager', 'employee', 'storeman'] },
+    { path: '/updates', icon: Megaphone, label: t('updates'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/audit', icon: Shield, label: 'Audit Logs', roles: ['manager'] }
   ];
 
@@ -99,6 +121,19 @@ const Layout = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Notifications Bell */}
+              <button
+                onClick={() => setShowNotifications(true)}
+                className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
               {/* Language Selector */}
               <select
                 value={i18n.language}
@@ -145,6 +180,11 @@ const Layout = () => {
           </div>
         </footer>
       </div>
+
+      {/* Notification Center Modal */}
+      {showNotifications && (
+        <NotificationCenter onClose={() => setShowNotifications(false)} />
+      )}
     </div>
   );
 };

@@ -812,5 +812,270 @@ Configured to accept requests from `FRONTEND_URL` environment variable.
 
 ---
 
+## Notification Endpoints (Email)
+
+Email notifications are sent via cPanel SMTP using your domain email (e.g., `mblaise@preferred.rw`).
+
+### Configuration
+
+Before using these endpoints, ensure your `.env` file has the correct cPanel SMTP settings:
+
+```env
+SMTP_HOST=mail.preferred.rw
+SMTP_PORT=465
+SMTP_USER=mblaise@preferred.rw
+SMTP_PASSWORD=your_cpanel_email_password
+EMAIL_FROM=mblaise@preferred.rw
+EMAIL_FROM_NAME=Preferred Contractors System
+```
+
+---
+
+### POST /notifications/test
+
+Test email configuration by sending a test email.
+
+**Authorization**: Not required (but recommended to add in production)
+
+**Request Body**:
+```json
+{
+  "email": "test@example.com"
+}
+```
+
+If no email is provided, it will send to the configured `SMTP_USER` email.
+
+**Response**:
+```json
+{
+  "message": "Test email sent successfully",
+  "email": "test@example.com"
+}
+```
+
+---
+
+### POST /notifications/system-update
+
+Send system update notification to all users in the system.
+
+**Authorization**: Manager role required
+
+**Request Body**:
+```json
+{
+  "title": "New Feature: Expense Tracking",
+  "details": "We have added a new expense tracking module. You can now record and track all project expenses with receipt uploads and categorization."
+}
+```
+
+**Response**:
+```json
+{
+  "message": "System update notifications sent",
+  "total": 50,
+  "successful": 48,
+  "failed": 2,
+  "results": [
+    { "email": "user1@example.com", "success": true },
+    { "email": "user2@example.com", "success": false, "error": "Invalid email" }
+  ]
+}
+```
+
+---
+
+### POST /notifications/project-update
+
+Send project update notification to all project members.
+
+**Authorization**: Employee or Manager role required
+
+**Request Body**:
+```json
+{
+  "projectId": 123,
+  "updateType": "Milestone Completed",
+  "details": "The foundation work has been completed ahead of schedule. Next phase begins on Monday."
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Project update notifications sent",
+  "project": "Downtown Mall Renovation",
+  "total": 15,
+  "successful": 15,
+  "results": [
+    { "email": "member@example.com", "success": true }
+  ]
+}
+```
+
+---
+
+### POST /notifications/task-assignment
+
+Send task assignment notification to a specific user.
+
+**Authorization**: Employee or Manager role required
+
+**Request Body**:
+```json
+{
+  "userId": 456,
+  "taskName": "Site Inspection",
+  "projectName": "Office Complex Phase 2",
+  "dueDate": "2026-03-15"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Task assignment notification sent",
+  "email": "worker@example.com"
+}
+```
+
+---
+
+### POST /notifications/custom
+
+Send custom notification to specific email addresses.
+
+**Authorization**: Manager role required
+
+**Request Body**:
+```json
+{
+  "recipientEmails": ["user1@example.com", "user2@example.com"],
+  "title": "Meeting Reminder",
+  "message": "This is a reminder about the team meeting scheduled for tomorrow at 10 AM."
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Custom notifications processed",
+  "total": 2,
+  "successful": 2,
+  "failed": 0,
+  "results": [
+    { "email": "user1@example.com", "success": true },
+    { "email": "user2@example.com", "success": true }
+  ]
+}
+```
+
+---
+
+## Email Templates
+
+The system includes the following built-in email templates:
+
+1. **System Update** - Blue themed, for general system announcements
+2. **Project Update** - Yellow themed, for project-specific updates
+3. **Task Assignment** - Blue themed, for new task notifications
+4. **Password Reset** - Green themed, with reset button
+5. **Welcome Email** - Green themed, for new users
+6. **Payroll Notification** - Green themed, with amount display
+7. **Message Notification** - Blue themed, for new messages
+8. **Generic/Custom** - Customizable for any purpose
+
+All templates are responsive and include:
+- Professional header with color coding
+- Styled content boxes
+- Company footer
+- Mobile-friendly design
+
+---
+
+## Frontend Integration Example
+
+### Using Axios (React/Vue)
+
+```javascript
+import axios from 'axios';
+
+const API_URL = 'http://localhost:5000/api';
+const token = localStorage.getItem('token');
+
+const config = {
+  headers: { Authorization: `Bearer ${token}` }
+};
+
+// Send system update
+const sendSystemUpdate = async (title, details) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/notifications/system-update`,
+      { title, details },
+      config
+    );
+    console.log('Update sent:', response.data);
+  } catch (error) {
+    console.error('Failed to send update:', error);
+  }
+};
+
+// Test email configuration
+const testEmail = async (email) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/notifications/test`,
+      { email }
+    );
+    console.log('Test email sent:', response.data);
+  } catch (error) {
+    console.error('Test failed:', error);
+  }
+};
+```
+
+---
+
+## cPanel Email Setup
+
+### Creating Email Account in cPanel
+
+1. Log into your cPanel
+2. Navigate to **Email Accounts**
+3. Click **Create** or **+ Add**
+4. Enter username (e.g., `mblaise` or `noreply`)
+5. Set a strong password
+6. Set storage quota (or unlimited)
+7. Click **Create**
+
+### Getting SMTP Details
+
+1. In cPanel Email Accounts, find your email
+2. Click **Connect Devices** or **Configure Mail Client**
+3. Note the following:
+   - **Incoming Server**: mail.yourdomain.com (IMAP/POP3)
+   - **Outgoing Server**: mail.yourdomain.com (SMTP)
+   - **Ports**: 
+     - SSL/TLS: 465 (recommended)
+     - STARTTLS: 587
+     - Unencrypted: 25 (not recommended)
+
+### Troubleshooting
+
+**Emails not sending:**
+- Verify SMTP password in `.env`
+- Check cPanel email quota
+- Ensure port 465 or 587 is not blocked by firewall
+- Check spam folder for test emails
+
+**SMTP Connection Error:**
+- Verify `SMTP_HOST` matches your cPanel mail server
+- Try port 587 with `secure: false` as alternative
+- Check cPanel error logs for SMTP issues
+
+---
+
 **API Version**: 1.0.0
 **Last Updated**: 2024

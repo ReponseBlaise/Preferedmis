@@ -44,7 +44,9 @@ const Attendance = () => {
   const fetchWorkers = async () => {
     try {
       const response = await workerAPI.getAll({ project_id: selectedProject, is_active: true });
-      setWorkers(response.data);
+      // Filter out monthly employees - they don't record attendance
+      const dailyWorkers = (response.data || []).filter(w => w.payment_type === 'daily');
+      setWorkers(dailyWorkers);
     } catch (error) {
       toast.error('Failed to load workers');
     }
@@ -142,6 +144,13 @@ const Attendance = () => {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="input-field"
             />
+          </div>
+
+          {/* Info message about monthly employees */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Only daily workers are shown here. Monthly employees do not record daily attendance and are paid their fixed salary during payroll.
+            </p>
           </div>
 
           <div className="space-y-4">

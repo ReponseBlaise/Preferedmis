@@ -2,7 +2,7 @@ const { supabaseAdmin } = require('../config/supabase');
 
 exports.createWorker = async (req, res) => {
   try {
-    const { project_id, full_name, phone, position, rate_per_day, payment_type } = req.body;
+    const { project_id, full_name, phone, position, rate_per_day, payment_type, monthly_salary, start_date, end_date } = req.body;
 
     // Validate required fields
     if (!project_id) {
@@ -14,20 +14,28 @@ exports.createWorker = async (req, res) => {
     if (!position) {
       return res.status(400).json({ error: 'Worker position is required' });
     }
-    if (!rate_per_day) {
-      return res.status(400).json({ error: 'Daily/Monthly rate is required' });
+    if (!rate_per_day && payment_type === 'daily') {
+      return res.status(400).json({ error: 'Daily rate is required for daily workers' });
     }
+    if (!monthly_salary && payment_type === 'monthly') {
+      return res.status(400).json({ error: 'Monthly salary is required for monthly employees' });
+    }
+
+    const workerData = {
+      project_id,
+      full_name,
+      phone,
+      position,
+      rate_per_day: payment_type === 'daily' ? rate_per_day : null,
+      payment_type: payment_type || 'daily',
+      monthly_salary: payment_type === 'monthly' ? monthly_salary : null,
+      start_date: start_date || new Date().toISOString().split('T')[0],
+      end_date: end_date || null
+    };
 
     const { data, error } = await supabaseAdmin
       .from('workers')
-      .insert({
-        project_id,
-        full_name,
-        phone,
-        position,
-        rate_per_day,
-        payment_type: payment_type || 'daily'
-      })
+      .insert(workerData)
       .select()
       .single();
 
@@ -103,7 +111,7 @@ exports.getWorker = async (req, res) => {
 
 exports.updateWorker = async (req, res) => {
   try {
-    const { full_name, phone, position, rate_per_day, payment_type, is_active } = req.body;
+    const { full_name, phone, position, rate_per_day, payment_type, monthly_salary, start_date, end_date, is_active } = req.body;
     const updates = {};
 
     if (full_name !== undefined) updates.full_name = full_name;
@@ -111,6 +119,9 @@ exports.updateWorker = async (req, res) => {
     if (position !== undefined) updates.position = position;
     if (rate_per_day !== undefined) updates.rate_per_day = rate_per_day;
     if (payment_type !== undefined) updates.payment_type = payment_type;
+    if (monthly_salary !== undefined) updates.monthly_salary = monthly_salary;
+    if (start_date !== undefined) updates.start_date = start_date;
+    if (end_date !== undefined) updates.end_date = end_date;
     if (is_active !== undefined) updates.is_active = is_active;
 
     const { data, error } = await supabaseAdmin
