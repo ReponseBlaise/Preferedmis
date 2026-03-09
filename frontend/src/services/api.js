@@ -61,6 +61,14 @@ export const inventoryAPI = {
   getTotalSpent: (params) => api.get('/inventory/total-spent', { params })
 };
 
+export const stockMovementAPI = {
+  record: (data) => api.post('/stock-movements', data),
+  getByItem: (itemId, params) => api.get(`/stock-movements/item/${itemId}`, { params }),
+  getSummary: (itemId) => api.get(`/stock-movements/item/${itemId}/summary`),
+  getByProject: (projectId, params) => api.get(`/stock-movements/project/${projectId}`, { params }),
+  delete: (id) => api.delete(`/stock-movements/${id}`)
+};
+
 export const expenseAPI = {
   create: (data) => api.post('/expenses', data),
   getAll: (params) => api.get('/expenses', { params }),
@@ -166,6 +174,13 @@ export default {
   deleteInventoryItem: (id) => inventoryAPI.delete(id).then(res => res.data),
   getInventoryReport: (params) => inventoryAPI.getReport(params).then(res => res.data),
   getTotalSpent: (params) => inventoryAPI.getTotalSpent(params).then(res => res.data),
+
+  // Stock Movements
+  recordStockMovement: (data) => stockMovementAPI.record(data).then(res => res.data),
+  getStockMovements: (itemId, params) => stockMovementAPI.getByItem(itemId, params).then(res => res.data),
+  getStockSummary: (itemId) => stockMovementAPI.getSummary(itemId).then(res => res.data),
+  getProjectStockMovements: (projectId, params) => stockMovementAPI.getByProject(projectId, params).then(res => res.data),
+  deleteStockMovement: (id) => stockMovementAPI.delete(id).then(res => res.data),
 
   // Expenses
   createExpense: (data) => expenseAPI.create(data).then(res => res.data),

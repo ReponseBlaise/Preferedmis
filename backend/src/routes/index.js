@@ -4,6 +4,7 @@ const authController = require('../controllers/authController');
 const workerController = require('../controllers/workerController');
 const attendanceController = require('../controllers/attendanceController');
 const inventoryController = require('../controllers/inventoryController');
+const stockMovementController = require('../controllers/stockMovementController');
 const expenseController = require('../controllers/expenseController');
 const projectController = require('../controllers/projectController');
 const messageController = require('../controllers/messageController');
@@ -55,6 +56,13 @@ router.put('/inventory/:id', auth, getUserProjects, authorize('storeman', 'manag
 router.delete('/inventory/:id', auth, getUserProjects, authorize('storeman', 'manager'), auditLog('DELETE', 'inventory_items'), inventoryController.deleteItem);
 router.get('/inventory/report', auth, getUserProjects, inventoryController.getInventoryReport);
 router.get('/inventory/total-spent', auth, getUserProjects, inventoryController.getTotalSpent);
+
+// Stock Movement routes
+router.post('/stock-movements', auth, getUserProjects, authorize('storeman', 'manager'), auditLog('CREATE', 'stock_movements'), stockMovementController.recordMovement);
+router.get('/stock-movements/item/:inventory_item_id', auth, getUserProjects, stockMovementController.getMovements);
+router.get('/stock-movements/item/:inventory_item_id/summary', auth, getUserProjects, stockMovementController.getStockSummary);
+router.get('/stock-movements/project/:project_id', auth, getUserProjects, stockMovementController.getProjectMovements);
+router.delete('/stock-movements/:id', auth, getUserProjects, authorize('storeman', 'manager'), auditLog('DELETE', 'stock_movements'), stockMovementController.deleteMovement);
 
 // Expense routes
 router.post('/expenses', auth, getUserProjects, authorize('storeman', 'manager'), auditLog('CREATE', 'expenses'), expenseController.createExpense);
