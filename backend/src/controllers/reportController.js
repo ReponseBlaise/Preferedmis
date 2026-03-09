@@ -12,12 +12,13 @@ exports.exportPayrollExcel = async (req, res) => {
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=payroll_${start_date}_${end_date}.xlsx`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
     console.error('Export payroll excel error:', error);
-    res.status(500).json({ error: 'Failed to export payroll' });
+    res.status(500).json({ error: error.message || 'Failed to export payroll' });
   }
 };
 
@@ -33,12 +34,13 @@ exports.exportPayrollPDF = async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=payroll_${start_date}_${end_date}.pdf`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
     doc.pipe(res);
     doc.end();
   } catch (error) {
     console.error('Export payroll PDF error:', error);
-    res.status(500).json({ error: 'Failed to export payroll' });
+    res.status(500).json({ error: error.message || 'Failed to export payroll' });
   }
 };
 
@@ -54,11 +56,12 @@ exports.exportInventoryExcel = async (req, res) => {
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=inventory_${Date.now()}.xlsx`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
     console.error('Export inventory excel error:', error);
-    res.status(500).json({ error: 'Failed to export inventory' });
+    res.status(500).json({ error: error.message || 'Failed to export inventory' });
   }
 };

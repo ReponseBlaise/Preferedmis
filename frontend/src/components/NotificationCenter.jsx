@@ -25,9 +25,10 @@ const NotificationCenter = ({ onClose }) => {
     try {
       setLoading(true);
       const response = await api.notifications.getAll({ limit: 50 });
-      setNotifications(response.data);
+      setNotifications(response?.data || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -36,9 +37,10 @@ const NotificationCenter = ({ onClose }) => {
   const fetchUnreadCount = async () => {
     try {
       const response = await api.notifications.getUnreadCount();
-      setUnreadCount(response.data.count);
+      setUnreadCount(response?.data?.count || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      setUnreadCount(0);
     }
   };
 
