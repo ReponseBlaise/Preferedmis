@@ -227,7 +227,6 @@ exports.getUserNotifications = async (req, res) => {
       .from('notifications')
       .select('*')
       .eq('user_id', req.user.id)
-      .order('is_read', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
 
@@ -237,12 +236,15 @@ exports.getUserNotifications = async (req, res) => {
 
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
 
-    res.json(data || []);
+    res.json({ data: data || [], count: data?.length || 0 });
   } catch (error) {
     console.error('Get notifications error:', error);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
+    res.status(500).json({ error: 'Failed to fetch notifications', data: [] });
   }
 };
 
