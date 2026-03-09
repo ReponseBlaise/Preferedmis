@@ -28,9 +28,10 @@ const Layout = () => {
   const fetchUnreadCount = async () => {
     try {
       const response = await api.notifications.getUnreadCount();
-      setUnreadCount(response.data.count || 0);
+      setUnreadCount(response?.count || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      setUnreadCount(0);
     }
   };
 

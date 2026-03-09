@@ -3,7 +3,6 @@ const cors = require('cors');
 require('dotenv').config();
 
 const routes = require('./routes');
-const pool = require('./config/database');
 
 const app = express();
 
@@ -26,21 +25,6 @@ app.get('/health', (req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
-});
-
-const PORT = process.env.PORT || 5000;
-
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-  });
-}
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server...');
-  pool.end();
-  process.exit(0);
 });
 
 module.exports = app;
