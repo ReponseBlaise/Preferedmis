@@ -53,6 +53,12 @@ exports.register = async (req, res) => {
         .insert(projectMembers);
     }
 
+    // Send welcome email (non-blocking)
+    const emailService = require('../services/emailService');
+    emailService.sendWelcomeEmail(email, full_name).catch(err => {
+      console.error('Welcome email failed (non-blocking):', err.message);
+    });
+
     res.status(201).json({ user: userData });
   } catch (error) {
     console.error('Registration error:', error);

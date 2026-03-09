@@ -33,15 +33,12 @@ exports.sendEmail = async (to, subject, html) => {
       subject,
       html
     });
-    console.log('Email sent:', info.messageId);
-    console.log('Accepted recipients:', info.accepted);
-    console.log('Rejected recipients:', info.rejected);
-    return info;
+    console.log('Email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email error:', error);
-    console.error('Error code:', error.code);
-    console.error('Error response:', error.response);
-    throw error;
+    console.error('Email sending failed:', error.message);
+    // Don't throw error - return failure status instead
+    return { success: false, error: error.message };
   }
 };
 
@@ -54,7 +51,12 @@ exports.sendWelcomeEmail = async (email, name) => {
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, 'Welcome to Preferred Contractors', html);
+  try {
+    return await this.sendEmail(email, 'Welcome to Preferred Contractors', html);
+  } catch (error) {
+    console.error('Welcome email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendPayrollNotification = async (email, name, amount, period) => {
@@ -66,7 +68,12 @@ exports.sendPayrollNotification = async (email, name, amount, period) => {
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, 'Payroll Notification', html);
+  try {
+    return await this.sendEmail(email, 'Payroll Notification', html);
+  } catch (error) {
+    console.error('Payroll email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendMessageNotification = async (email, name, subject) => {
@@ -78,10 +85,14 @@ exports.sendMessageNotification = async (email, name, subject) => {
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, 'New Message Notification', html);
+  try {
+    return await this.sendEmail(email, 'New Message Notification', html);
+  } catch (error) {
+    console.error('Message notification email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
-// System Update Notifications
 exports.sendSystemUpdateNotification = async (email, name, updateTitle, updateDetails) => {
   const html = `
     <h2>System Update Notification</h2>
@@ -95,7 +106,12 @@ exports.sendSystemUpdateNotification = async (email, name, updateTitle, updateDe
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, `System Update: ${updateTitle}`, html);
+  try {
+    return await this.sendEmail(email, `System Update: ${updateTitle}`, html);
+  } catch (error) {
+    console.error('System update email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendProjectUpdateNotification = async (email, name, projectName, updateType, details) => {
@@ -111,7 +127,12 @@ exports.sendProjectUpdateNotification = async (email, name, projectName, updateT
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, `Project Update: ${projectName}`, html);
+  try {
+    return await this.sendEmail(email, `Project Update: ${projectName}`, html);
+  } catch (error) {
+    console.error('Project update email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendTaskAssignmentNotification = async (email, name, taskName, projectName, dueDate) => {
@@ -128,7 +149,12 @@ exports.sendTaskAssignmentNotification = async (email, name, taskName, projectNa
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, 'New Task Assigned', html);
+  try {
+    return await this.sendEmail(email, 'New Task Assigned', html);
+  } catch (error) {
+    console.error('Task assignment email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendPasswordResetEmail = async (email, name, resetLink) => {
@@ -144,7 +170,12 @@ exports.sendPasswordResetEmail = async (email, name, resetLink) => {
     <br>
     <p>Best regards,<br>Preferred Contractors Team</p>
   `;
-  return this.sendEmail(email, 'Password Reset Request', html);
+  try {
+    return await this.sendEmail(email, 'Password Reset Request', html);
+  } catch (error) {
+    console.error('Password reset email failed:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 exports.sendBulkEmail = async (recipients, subject, html) => {
