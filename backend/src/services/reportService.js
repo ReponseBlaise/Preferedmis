@@ -1,18 +1,54 @@
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { supabase } = require('../config/supabase');
+const path = require('path');
+const fs = require('fs');
+
+const LOGO_PATH = path.join(__dirname, '../../assets/logo.png');
 
 exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Payroll Report');
 
+  // Add logo if exists
+  if (fs.existsSync(LOGO_PATH)) {
+    const logoId = workbook.addImage({
+      filename: LOGO_PATH,
+      extension: 'png',
+    });
+    worksheet.addImage(logoId, {
+      tl: { col: 0, row: 0 },
+      ext: { width: 150, height: 60 }
+    });
+  }
+
+  // Add title
+  worksheet.mergeCells('A1:F3');
+  worksheet.getCell('A1').value = 'PREFERRED CONTRACTORS';
+  worksheet.getCell('A1').font = { size: 18, bold: true, color: { argb: 'FF1e40af' } };
+  worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+  
+  worksheet.mergeCells('A4:F4');
+  worksheet.getCell('A4').value = 'PAYROLL REPORT';
+  worksheet.getCell('A4').font = { size: 14, bold: true };
+  worksheet.getCell('A4').alignment = { vertical: 'middle', horizontal: 'center' };
+  
+  worksheet.mergeCells('A5:F5');
+  worksheet.getCell('A5').value = `Period: ${start_date} to ${end_date}`;
+  worksheet.getCell('A5').font = { size: 11 };
+  worksheet.getCell('A5').alignment = { vertical: 'middle', horizontal: 'center' };
+  
+  worksheet.addRow([]);
+
+  // Headers starting at row 7
+  worksheet.getRow(7).values = ['Worker Name', 'Phone', 'Position', 'Rate/Day (RWF)', 'Days Worked', 'Total Amount (RWF)'];
   worksheet.columns = [
-    { header: 'Worker Name', key: 'full_name', width: 25 },
-    { header: 'Phone', key: 'phone', width: 15 },
-    { header: 'Position', key: 'position', width: 20 },
-    { header: 'Rate/Day (RWF)', key: 'rate_per_day', width: 15 },
-    { header: 'Days Worked', key: 'total_days_worked', width: 15 },
-    { header: 'Total Amount (RWF)', key: 'total_amount', width: 20 }
+    { key: 'full_name', width: 25 },
+    { key: 'phone', width: 15 },
+    { key: 'position', width: 20 },
+    { key: 'rate_per_day', width: 15 },
+    { key: 'total_days_worked', width: 15 },
+    { key: 'total_amount', width: 20 }
   ];
 
   // Fetch workers
@@ -47,8 +83,8 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     worksheet.addRow(row);
   });
 
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  worksheet.getRow(7).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(7).fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FF1e40af' }
@@ -58,7 +94,12 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     full_name: 'TOTAL',
     total_amount: rows.reduce((sum, row) => sum + parseFloat(row.total_amount), 0)
   });
-  totalRow.font = { bold: true };
+  totalRow.font = { bold: true, size: 12 };
+  totalRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE5E7EB' }
+  };
 
   return workbook;
 };
@@ -67,14 +108,48 @@ exports.generateInventoryExcel = async (project_id, start_date, end_date) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Inventory Report');
 
+  // Add logo if exists
+  if (fs.existsSync(LOGO_PATH)) {
+    const logoId = workbook.addImage({
+      filename: LOGO_PATH,
+      extension: 'png',
+    });
+    worksheet.addImage(logoId, {
+      tl: { col: 0, row: 0 },
+      ext: { width: 150, height: 60 }
+    });
+  }
+
+  // Add title
+  worksheet.mergeCells('A1:G3');
+  worksheet.getCell('A1').value = 'PREFERRED CONTRACTORS';
+  worksheet.getCell('A1').font = { size: 18, bold: true, color: { argb: 'FF1e40af' } };
+  worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+  
+  worksheet.mergeCells('A4:G4');
+  worksheet.getCell('A4').value = 'INVENTORY REPORT';
+  worksheet.getCell('A4').font = { size: 14, bold: true };
+  worksheet.getCell('A4').alignment = { vertical: 'middle', horizontal: 'center' };
+  
+  if (start_date && end_date) {
+    worksheet.mergeCells('A5:G5');
+    worksheet.getCell('A5').value = `Period: ${start_date} to ${end_date}`;
+    worksheet.getCell('A5').font = { size: 11 };
+    worksheet.getCell('A5').alignment = { vertical: 'middle', horizontal: 'center' };
+  }
+  
+  worksheet.addRow([]);
+
+  // Headers starting at row 7
+  worksheet.getRow(7).values = ['Item Name', 'Category', 'Quantity', 'Unit', 'Unit Price (RWF)', 'Total Price (RWF)', 'Purchase Date'];
   worksheet.columns = [
-    { header: 'Item Name', key: 'name', width: 30 },
-    { header: 'Category', key: 'category_name', width: 20 },
-    { header: 'Quantity', key: 'quantity', width: 12 },
-    { header: 'Unit', key: 'unit', width: 12 },
-    { header: 'Unit Price (RWF)', key: 'unit_price', width: 15 },
-    { header: 'Total Price (RWF)', key: 'total_price', width: 18 },
-    { header: 'Purchase Date', key: 'purchase_date', width: 15 }
+    { key: 'name', width: 30 },
+    { key: 'category_name', width: 20 },
+    { key: 'quantity', width: 12 },
+    { key: 'unit', width: 12 },
+    { key: 'unit_price', width: 15 },
+    { key: 'total_price', width: 18 },
+    { key: 'purchase_date', width: 15 }
   ];
 
   let query = supabase
@@ -100,8 +175,8 @@ exports.generateInventoryExcel = async (project_id, start_date, end_date) => {
     });
   });
 
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  worksheet.getRow(7).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(7).fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FF1e40af' }
@@ -113,9 +188,15 @@ exports.generateInventoryExcel = async (project_id, start_date, end_date) => {
 exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   const doc = new PDFDocument({ margin: 50 });
 
-  doc.fontSize(20).text('Payroll Report', { align: 'center' });
+  // Add logo if exists
+  if (fs.existsSync(LOGO_PATH)) {
+    doc.image(LOGO_PATH, 50, 30, { width: 100 });
+  }
+
+  doc.fontSize(20).text('PREFERRED CONTRACTORS', { align: 'center' });
+  doc.fontSize(16).text('Payroll Report', { align: 'center' });
   doc.fontSize(12).text(`Period: ${start_date} to ${end_date}`, { align: 'center' });
-  doc.moveDown();
+  doc.moveDown(2);
 
   // Fetch workers
   const { data: workers } = await supabase
