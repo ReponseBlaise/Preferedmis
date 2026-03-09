@@ -14,6 +14,24 @@ const ensureUploadDir = async () => {
   }
 };
 
+// Get all users for messaging (available to all authenticated users)
+exports.getUsers = async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name, email, role')
+      .eq('is_active', true)
+      .order('full_name');
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+};
+
 // Send a new message or reply
 exports.sendMessage = async (req, res) => {
   try {

@@ -80,6 +80,7 @@ router.post('/projects/:id/members', auth, getUserProjects, authorize('manager')
 router.get('/projects/:id/members', auth, getUserProjects, projectController.getMembers);
 
 // Message routes
+router.get('/messages/users', auth, messageController.getUsers);
 router.post('/messages', auth, auditLog('CREATE', 'messages'), messageController.sendMessage);
 router.get('/messages', auth, messageController.getMessages);
 router.get('/messages/conversations', auth, messageController.getConversations);

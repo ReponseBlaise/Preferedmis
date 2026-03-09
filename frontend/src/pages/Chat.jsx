@@ -39,10 +39,11 @@ const Chat = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/auth/users');
+      const response = await api.get('/messages/users');
       setUsers(response.data.filter(u => u.id !== user.id) || []);
     } catch (error) {
       console.error('Failed to fetch users');
+      toast.error('Failed to load users');
     }
   };
 
