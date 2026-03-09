@@ -1,6 +1,6 @@
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
-const pool = require('../config/database');
+const { supabase } = require('../config/supabase');
 
 exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   const workbook = new ExcelJS.Workbook();
@@ -15,22 +15,35 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     { header: 'Total Amount (RWF)', key: 'total_amount', width: 20 }
   ];
 
-  const query = `
-    SELECT 
-      w.full_name, w.phone, w.position, w.rate_per_day,
-      COALESCE(SUM(a.days_worked), 0) as total_days_worked,
-      w.rate_per_day * COALESCE(SUM(a.days_worked), 0) as total_amount
-    FROM workers w
-    LEFT JOIN attendance a ON w.id = a.worker_id 
-      AND a.attendance_date >= $1 AND a.attendance_date <= $2
-    WHERE w.project_id = $3
-    GROUP BY w.id, w.full_name, w.phone, w.position, w.rate_per_day
-    ORDER BY w.full_name
-  `;
+  // Fetch workers
+  const { data: workers } = await supabase
+    .from('workers')
+    .select('*')
+    .eq('project_id', project_id);
 
-  const result = await pool.query(query, [start_date, end_date, project_id]);
+  // Fetch attendance for date range
+  const { data: attendance } = await supabase
+    .from('attendance')
+    .select('*')
+    .gte('attendance_date', start_date)
+    .lte('attendance_date', end_date);
 
-  result.rows.forEach(row => {
+  // Calculate totals
+  const rows = workers.map(w => {
+    const workerAttendance = attendance.filter(a => a.worker_id === w.id);
+    const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked || 0), 0);
+    const total_amount = w.rate_per_day * total_days_worked;
+    return {
+      full_name: w.full_name,
+      phone: w.phone,
+      position: w.position,
+      rate_per_day: w.rate_per_day,
+      total_days_worked,
+      total_amount
+    };
+  });
+
+  rows.forEach(row => {
     worksheet.addRow(row);
   });
 
@@ -43,7 +56,7 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
 
   const totalRow = worksheet.addRow({
     full_name: 'TOTAL',
-    total_amount: result.rows.reduce((sum, row) => sum + parseFloat(row.total_amount), 0)
+    total_amount: rows.reduce((sum, row) => sum + parseFloat(row.total_amount), 0)
   });
   totalRow.font = { bold: true };
 
@@ -64,25 +77,27 @@ exports.generateInventoryExcel = async (project_id, start_date, end_date) => {
     { header: 'Purchase Date', key: 'purchase_date', width: 15 }
   ];
 
-  let query = `
-    SELECT i.*, c.name as category_name
-    FROM inventory_items i
-    LEFT JOIN inventory_categories c ON i.category_id = c.id
-    WHERE i.project_id = $1
-  `;
-  const params = [project_id];
+  let query = supabase
+    .from('inventory_items')
+    .select('*, inventory_categories(name)')
+    .eq('project_id', project_id);
 
   if (start_date && end_date) {
-    params.push(start_date, end_date);
-    query += ` AND i.purchase_date >= $2 AND i.purchase_date <= $3`;
+    query = query.gte('purchase_date', start_date).lte('purchase_date', end_date);
   }
 
-  query += ' ORDER BY i.purchase_date DESC';
+  const { data: items } = await query.order('purchase_date', { ascending: false });
 
-  const result = await pool.query(query, params);
-
-  result.rows.forEach(row => {
-    worksheet.addRow(row);
+  items.forEach(item => {
+    worksheet.addRow({
+      name: item.name,
+      category_name: item.inventory_categories?.name || '',
+      quantity: item.quantity,
+      unit: item.unit,
+      unit_price: item.unit_price,
+      total_price: item.total_price,
+      purchase_date: item.purchase_date
+    });
   });
 
   worksheet.getRow(1).font = { bold: true };
@@ -102,20 +117,32 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   doc.fontSize(12).text(`Period: ${start_date} to ${end_date}`, { align: 'center' });
   doc.moveDown();
 
-  const query = `
-    SELECT 
-      w.full_name, w.position, w.rate_per_day,
-      COALESCE(SUM(a.days_worked), 0) as total_days_worked,
-      w.rate_per_day * COALESCE(SUM(a.days_worked), 0) as total_amount
-    FROM workers w
-    LEFT JOIN attendance a ON w.id = a.worker_id 
-      AND a.attendance_date >= $1 AND a.attendance_date <= $2
-    WHERE w.project_id = $3
-    GROUP BY w.id, w.full_name, w.position, w.rate_per_day
-    ORDER BY w.full_name
-  `;
+  // Fetch workers
+  const { data: workers } = await supabase
+    .from('workers')
+    .select('*')
+    .eq('project_id', project_id);
 
-  const result = await pool.query(query, [start_date, end_date, project_id]);
+  // Fetch attendance for date range
+  const { data: attendance } = await supabase
+    .from('attendance')
+    .select('*')
+    .gte('attendance_date', start_date)
+    .lte('attendance_date', end_date);
+
+  // Calculate totals
+  const rows = workers.map(w => {
+    const workerAttendance = attendance.filter(a => a.worker_id === w.id);
+    const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked || 0), 0);
+    const total_amount = w.rate_per_day * total_days_worked;
+    return {
+      full_name: w.full_name,
+      position: w.position,
+      rate_per_day: w.rate_per_day,
+      total_days_worked,
+      total_amount
+    };
+  });
 
   const tableTop = 150;
   const itemHeight = 30;
@@ -129,7 +156,7 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   let y = tableTop + 20;
   let total = 0;
 
-  result.rows.forEach((row, i) => {
+  rows.forEach((row, i) => {
     doc.text(row.full_name, 50, y);
     doc.text(row.position, 200, y);
     doc.text(row.total_days_worked.toString(), 320, y);
