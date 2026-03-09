@@ -8,13 +8,19 @@ const pool = require('./config/database');
 const app = express();
 
 app.use(cors({
-  origin: [
-    'https://preferedmisui.vercel.app',
-    'https://preferedmisui-n3cdqtbwn-mushimiyumukiza-blaises-projects.vercel.app',
-    /\.vercel\.app$/,
-    'http://localhost:5173',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'https://preferedmisui.vercel.app',
+      'http://localhost:5173',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+    
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
