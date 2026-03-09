@@ -118,12 +118,20 @@ exports.sendMessage = async (req, res) => {
           </div>
         `;
 
-        await emailService.sendEmail(receiverData.email, emailSubject, emailBody);
+    // Send email notification to receiver (non-blocking)
+    emailService.sendEmail(
+      receiverData.email,
+      emailSubject,
+      emailBody
+    ).then(result => {
+      if (result.success) {
+        console.log('✅ Message email sent to:', receiverData.email);
+      } else {
+        console.error('❌ Message email failed:', result.error);
       }
-    } catch (emailError) {
-      console.error('Email notification error:', emailError);
-      // Don't fail the message send if email fails
-    }
+    }).catch(err => {
+      console.error('❌ Message email error:', err.message);
+    });
 
     res.status(201).json({ 
       ...data, 

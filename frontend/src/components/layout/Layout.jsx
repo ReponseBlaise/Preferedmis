@@ -34,7 +34,7 @@ const Layout = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
+    const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -43,7 +43,6 @@ const Layout = () => {
       const response = await api.notifications.getUnreadCount();
       setUnreadCount(response?.count || 0);
     } catch (error) {
-      console.error('Error fetching unread count:', error);
       setUnreadCount(0);
     }
   };

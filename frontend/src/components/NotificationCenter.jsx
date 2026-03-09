@@ -105,8 +105,12 @@ const NotificationCenter = ({ onClose }) => {
       markAsRead(notification.id);
     }
     
+    onClose();
+    
     if (notification.action_url) {
-      window.location.href = notification.action_url;
+      setTimeout(() => {
+        window.location.href = notification.action_url;
+      }, 100);
     }
   };
 
