@@ -1,5 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
-const { sendEmailNotification } = require('../services/emailService');
+const emailService = require('../services/emailService');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -118,7 +118,7 @@ exports.sendMessage = async (req, res) => {
           </div>
         `;
 
-        await sendEmailNotification(receiverData.email, emailSubject, emailBody);
+        await emailService.sendEmail(receiverData.email, emailSubject, emailBody);
       }
     } catch (emailError) {
       console.error('Email notification error:', emailError);
