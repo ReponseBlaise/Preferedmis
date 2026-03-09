@@ -334,45 +334,12 @@ const Inventory = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Unit Price</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={movementForm.unit_price}
-                  onChange={(e) => setMovementForm({ ...movementForm, unit_price: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Reference Number</label>
-                <input
-                  type="text"
-                  value={movementForm.reference_number}
-                  onChange={(e) => setMovementForm({ ...movementForm, reference_number: e.target.value })}
-                  className="input-field"
-                  placeholder="PO#, Invoice#, etc."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Date *</label>
-                <input
-                  type="date"
-                  value={movementForm.movement_date}
-                  onChange={(e) => setMovementForm({ ...movementForm, movement_date: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1">Notes</label>
                 <textarea
                   value={movementForm.notes}
                   onChange={(e) => setMovementForm({ ...movementForm, notes: e.target.value })}
                   className="input-field"
-                  rows="2"
+                  rows="3"
                   placeholder="Additional details..."
                 />
               </div>

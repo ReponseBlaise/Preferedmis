@@ -163,35 +163,19 @@ exports.getPayrollReport = async (req, res) => {
     // Calculate payroll
     const payrollData = workers
       .filter(worker => {
-        // For monthly employees, check if they were employed during the payroll period
+        // For monthly employees, check if period is >= 28 days
         if (worker.payment_type === 'monthly') {
-          const workerStart = worker.start_date ? new Date(worker.start_date) : startDate;
-          const workerEnd = worker.end_date ? new Date(worker.end_date) : null;
-          
-          // Include if: started before period end AND (still employed OR ended after period start)
-          return workerStart <= endDate && (!workerEnd || workerEnd >= startDate);
+          const totalDaysInPeriod = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          return totalDaysInPeriod >= 28;
         }
-        // Include all daily workers (they need attendance records)
+        // Include all daily workers
         return true;
       })
       .map(worker => {
         if (worker.payment_type === 'monthly') {
-          // Monthly employee - calculate based on days employed in the period
-          const workerStart = worker.start_date ? new Date(worker.start_date) : startDate;
-          const workerEnd = worker.end_date ? new Date(worker.end_date) : endDate;
-          
-          // Calculate overlapping days
-          const effectiveStart = workerStart < startDate ? startDate : workerStart;
-          const effectiveEnd = workerEnd > endDate ? endDate : workerEnd;
-          
+          // Monthly employee - full salary if period >= 28 days
           const totalDaysInPeriod = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-          const daysEmployed = Math.floor((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1;
-          
-          // Prorate salary if not employed for full period
           const salaryAmount = worker.monthly_salary || 0;
-          const proratedAmount = totalDaysInPeriod > 0 
-            ? (salaryAmount * daysEmployed) / totalDaysInPeriod 
-            : 0;
 
           return {
             worker_id: worker.id,
@@ -201,10 +185,10 @@ exports.getPayrollReport = async (req, res) => {
             rate_per_day: null,
             monthly_salary: worker.monthly_salary,
             payment_type: worker.payment_type,
-            total_days_worked: daysEmployed,
+            total_days_worked: totalDaysInPeriod,
             total_days_in_period: totalDaysInPeriod,
-            total_amount: proratedAmount,
-            employment_status: worker.end_date ? 'ended' : 'active'
+            total_amount: salaryAmount,
+            employment_status: worker.is_active ? 'active' : 'inactive'
           };
         } else {
           // Daily worker - calculate based on attendance
