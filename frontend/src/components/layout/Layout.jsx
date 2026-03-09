@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Users, Calendar, Package,
   FolderKanban, MessageSquare, LogOut, Menu, X, UserCog, Shield,
-  Bell, FileText, Megaphone
+  Bell, FileText, Megaphone, TrendingUp
 } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';
 import api from '../../services/api';
@@ -57,6 +57,7 @@ const Layout = () => {
     { path: '/workers', icon: Users, label: t('workers'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/attendance', icon: Calendar, label: t('attendance'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/inventory', icon: Package, label: t('inventory'), roles: ['manager', 'storeman'] },
+    { path: '/stock-movements', icon: TrendingUp, label: 'Stock Movements', roles: ['manager', 'storeman'] },
     { path: '/projects', icon: FolderKanban, label: t('projects'), roles: ['manager'] },
     { path: '/messages', icon: MessageSquare, label: t('messages'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/users', icon: UserCog, label: 'Users', roles: ['manager'] },
