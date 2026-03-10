@@ -239,18 +239,23 @@ const Attendance = () => {
 
                   <div className="flex gap-2 items-center">
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Days</label>
-                      <select
-                        value={attendance[worker.id]?.days || 1.0}
-                        onChange={(e) => setDays(worker.id, e.target.value)}
-                        className="input-field w-20 text-sm"
-                        disabled={!isPresent}
-                      >
-                        <option value="0.25">0.25</option>
-                        <option value="0.5">0.5</option>
-                        <option value="0.75">0.75</option>
-                        <option value="1.0">1.0</option>
-                      </select>
+                      <label className="block text-xs text-gray-600 mb-1">Days Worked</label>
+                      <div className="flex gap-1">
+                        {[0.25, 0.5, 0.75, 1.0].map(val => (
+                          <button
+                            key={val}
+                            onClick={() => setDays(worker.id, val)}
+                            disabled={!isPresent}
+                            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                              attendance[worker.id]?.days === val
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="w-48 hidden md:block">
