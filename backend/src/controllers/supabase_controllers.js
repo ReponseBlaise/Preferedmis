@@ -77,9 +77,18 @@ exports.inventory = {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Get items error:', error);
+        throw error;
+      }
 
-      res.json(data);
+      // Format data with category_name for frontend
+      const formattedData = (data || []).map(item => ({
+        ...item,
+        category_name: item.inventory_categories?.name || 'Uncategorized'
+      }));
+
+      res.json(formattedData);
     } catch (error) {
       console.error('Get items error:', error);
       res.status(500).json({ error: 'Failed to fetch items' });
