@@ -12,7 +12,6 @@ const dashboardController = require('../controllers/dashboardController');
 const reportController = require('../controllers/reportController');
 const auditController = require('../controllers/auditController');
 const notificationController = require('../controllers/notificationController');
-const documentController = require('../controllers/documentController');
 const publicUpdateController = require('../controllers/publicUpdateController');
 const { auth, authorize } = require('../middleware/auth');
 const auditLog = require('../middleware/audit');
@@ -91,7 +90,6 @@ router.put('/messages/:id', auth, auditLog('UPDATE', 'messages'), messageControl
 router.delete('/messages/:id', auth, auditLog('DELETE', 'messages'), messageController.deleteMessage);
 router.post('/messages/:id/forward', auth, messageController.forwardMessage);
 router.post('/messages/:id/attachments', auth, upload.single('file'), messageController.uploadAttachment);
-router.post('/messages/:id/attachments/add', auth, messageController.addAttachmentToMessage);
 router.get('/messages/:id/attachments', auth, messageController.getMessageAttachments);
 router.delete('/messages/:id/attachments/:attachmentId', auth, messageController.deleteAttachment);
 
@@ -117,16 +115,6 @@ router.get('/notifications/unread-count', auth, notificationController.getUnread
 router.put('/notifications/:id/read', auth, notificationController.markNotificationAsRead);
 router.put('/notifications/read-all', auth, notificationController.markAllAsRead);
 router.delete('/notifications/:id', auth, notificationController.deleteNotification);
-
-// Document routes
-router.post('/documents', auth, upload.single('file'), documentController.uploadDocument);
-router.get('/documents', auth, documentController.getDocuments);
-router.get('/documents/shared', auth, documentController.getSharedDocuments);
-router.get('/documents/:id', auth, documentController.getDocument);
-router.get('/documents/:id/download', auth, documentController.downloadDocument);
-router.put('/documents/:id/share', auth, documentController.shareDocument);
-router.delete('/documents/:id/share', auth, documentController.unshareDocument);
-router.delete('/documents/:id', auth, documentController.deleteDocument);
 
 // Public updates routes
 router.post('/updates', auth, publicUpdateController.createPublicUpdate);

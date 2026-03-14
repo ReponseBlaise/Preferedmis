@@ -129,13 +129,19 @@ const Attendance = () => {
       const response = fmt === 'excel'
         ? await reportAPI.exportPayrollExcel({ project_id: selectedProject, ...dateRange })
         : await reportAPI.exportPayrollPDF({ project_id: selectedProject, ...dateRange });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = new Blob([response.data], {
+        type: fmt === 'excel'
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : 'application/pdf'
+      });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `payroll_${dateRange.start_date}_${dateRange.end_date}.${fmt === 'excel' ? 'xlsx' : 'pdf'}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
       toast.success('Report exported');
     } catch { toast.error('Failed to export report'); }
   };
