@@ -53,40 +53,43 @@ exports.inventory = {
       const { project_id, category_id, search } = req.query;
       let query = supabaseAdmin
         .from('inventory_items')
-        .select(`
-          *,
-          inventory_categories (
-            name,
-            type
-          )
-        `);
+        .select('*, inventory_categories(name, type)');
 
-      if (project_id) {
-        query = query.eq('project_id', project_id);
-      }
-
-      if (category_id) {
-        query = query.eq('category_id', category_id);
-      }
-
-      if (search) {
-        query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-      }
+      if (project_id) query = query.eq('project_id', project_id);
+      if (category_id) query = query.eq('category_id', category_id);
+      if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
 
       query = query.order('created_at', { ascending: false });
-
       const { data, error } = await query;
+      if (error) throw error;
 
-      if (error) {
-        console.error('Get items error:', error);
-        throw error;
+      // Fetch all stock movements for these items in one query
+      const itemIds = (data || []).map(i => i.id);
+      let movementsMap = {};
+      if (itemIds.length > 0) {
+        const { data: movements } = await supabaseAdmin
+          .from('stock_movements')
+          .select('inventory_item_id, movement_type, quantity')
+          .in('inventory_item_id', itemIds);
+
+        (movements || []).forEach(m => {
+          if (!movementsMap[m.inventory_item_id]) movementsMap[m.inventory_item_id] = { in: 0, out: 0 };
+          movementsMap[m.inventory_item_id][m.movement_type] += parseFloat(m.quantity || 0);
+        });
       }
 
-      // Format data with category_name for frontend
-      const formattedData = (data || []).map(item => ({
-        ...item,
-        category_name: item.inventory_categories?.name || 'Uncategorized'
-      }));
+      const formattedData = (data || []).map(item => {
+        const mv = movementsMap[item.id] || { in: 0, out: 0 };
+        // remaining = initial quantity (stock in at creation) + additional stock in - stock out
+        const remaining_stock = parseFloat(item.quantity || 0) + mv.in - mv.out;
+        return {
+          ...item,
+          category_name: item.inventory_categories?.name || 'Uncategorized',
+          total_in: mv.in,
+          total_out: mv.out,
+          remaining_stock: Math.max(0, remaining_stock)
+        };
+      });
 
       res.json(formattedData);
     } catch (error) {

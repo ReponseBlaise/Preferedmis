@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 
 // Record stock movement (in or out)
 exports.recordMovement = async (req, res) => {
