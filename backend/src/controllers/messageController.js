@@ -105,7 +105,7 @@ exports.getMessages = async (req, res) => {
       const [senderData, receiverData, attachmentsData] = await Promise.all([
         supabaseAdmin.from('users').select('id, full_name, email, role').eq('id', msg.sender_id).single(),
         supabaseAdmin.from('users').select('id, full_name, email').eq('id', msg.receiver_id).single(),
-        supabaseAdmin.from('message_attachments').select('*').eq('message_id', msg.id)
+        supabaseAdmin.from('message_attachments').select('id, file_name, file_path, file_size, file_type').eq('message_id', msg.id)
       ]);
       return {
         ...msg,

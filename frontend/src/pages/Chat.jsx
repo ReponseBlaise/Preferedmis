@@ -88,37 +88,36 @@ const Chat = () => {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!messageText.trim() && attachments.length === 0) return;
-    if (!selectedUser) {
-      toast.error('Please select a user to chat with');
-      return;
-    }
+    if (!selectedUser) { toast.error('Please select a user to chat with'); return; }
 
     setLoading(true);
     try {
-      const messageData = {
+      // Step 1: send message — use axios directly to get full response
+      const { data: sentMsg } = await api.post('/messages', {
         receiver_id: selectedUser.id,
         subject: 'Chat Message',
-        message: messageText,
+        message: messageText || '📎 Attachment',
         priority: 'normal'
-      };
+      });
 
-      const response = await api.sendMessage(messageData);
-
-      // Upload attachments
-      if (attachments.length > 0 && response.id) {
+      // Step 2: upload each attachment to the new message id
+      if (attachments.length > 0 && sentMsg?.id) {
         for (const att of attachments) {
           const formData = new FormData();
           formData.append('file', att.file);
           try {
-            await api.messages.uploadAttachment(response.id, formData);
+            await api.post(`/messages/${sentMsg.id}/attachments`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
           } catch (err) {
-            console.error('Failed to upload attachment');
+            toast.error(`Failed to upload ${att.name}`);
           }
         }
       }
 
       setMessageText('');
       setAttachments([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       fetchMessages();
     } catch (error) {
       toast.error('Failed to send message');
@@ -219,13 +218,17 @@ const Chat = () => {
                               <a
                                 key={idx}
                                 href={att.file_path}
-                                download={att.file_name}
-                                className={`flex items-center gap-2 p-2 rounded text-xs ${
-                                  isOwn ? 'bg-blue-700' : 'bg-gray-100'
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-2 p-2 rounded text-xs hover:opacity-80 transition-opacity ${
+                                  isOwn ? 'bg-blue-700 text-white' : 'bg-gray-100 text-gray-700'
                                 }`}
                               >
-                                {getAttachmentIcon(att.file_type)}
-                                <span className="truncate">{att.file_name}</span>
+                                {getAttachmentIcon(att.file_type || '')}
+                                <span className="truncate flex-1">{att.file_name}</span>
+                                {att.file_size && (
+                                  <span className="shrink-0 opacity-70">{formatFileSize(att.file_size)}</span>
+                                )}
                               </a>
                             ))}
                           </div>
