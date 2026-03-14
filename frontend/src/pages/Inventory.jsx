@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryAPI, projectAPI, reportAPI, stockMovementAPI } from '../services/api';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit, Trash2, Download, TrendingUp, TrendingDown, History, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -18,7 +19,14 @@ const Inventory = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [movements, setMovements] = useState([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const s = searchParams.get('search');
+    if (s) setSearchTerm(s);
+  }, [searchParams]);
 
   const [formData, setFormData] = useState({
     name: '', description: '', quantity: '', unit: '',
@@ -151,6 +159,13 @@ const Inventory = () => {
     return { label: 'In Stock', cls: 'bg-green-100 text-green-700' };
   };
 
+  const filteredItems = items.filter(item =>
+    !searchTerm ||
+    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex gap-4 h-full">
       {/* Main content */}
@@ -168,13 +183,27 @@ const Inventory = () => {
         </div>
 
         <div className="card">
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="input-field mb-6 max-w-xs"
-          >
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <div className="flex gap-3 mb-6 items-center">
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              className="input-field max-w-xs"
+            >
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <div className="relative flex-1 max-w-xs">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input-field pl-3 w-full"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+              )}
+            </div>
+          </div>
 
           <div className="table-container">
             <table className="table">
@@ -192,7 +221,7 @@ const Inventory = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {items.map(item => {
+                {filteredItems.map(item => {
                   const status = stockStatus(item);
                   return (
                     <tr key={item.id}>
@@ -232,8 +261,10 @@ const Inventory = () => {
                 })}
               </tbody>
             </table>
-            {items.length === 0 && (
-              <div className="text-center py-12 text-gray-400">No inventory items found for this project</div>
+            {filteredItems.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                {searchTerm ? `No items matching "${searchTerm}"` : 'No inventory items found for this project'}
+              </div>
             )}
           </div>
         </div>

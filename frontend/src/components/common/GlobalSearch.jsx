@@ -73,8 +73,14 @@ const GlobalSearch = () => {
 
   const totalResults = Object.values(results).reduce((sum, arr) => sum + arr.length, 0);
 
-  const handleSelect = (path) => {
-    navigate(path);
+  const handleSelect = (path, item, key) => {
+    // Pass the search term as URL param so the target page can auto-filter
+    const params = new URLSearchParams();
+    if (key === 'workers') params.set('search', item.full_name);
+    if (key === 'projects') params.set('search', item.name);
+    if (key === 'inventory') params.set('search', item.name);
+    if (key === 'messages') params.set('search', item.subject);
+    navigate(`${path}?${params.toString()}`);
     setQuery('');
     setOpen(false);
   };
@@ -151,7 +157,7 @@ const GlobalSearch = () => {
                     return (
                       <button
                         key={i}
-                        onClick={() => handleSelect(path)}
+                        onClick={() => handleSelect(path, item, key)}
                         className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 group"
                       >
                         <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-700">{primary}</p>
@@ -161,7 +167,7 @@ const GlobalSearch = () => {
                   })}
                   {items.length > 5 && (
                     <button
-                      onClick={() => handleSelect(path)}
+                      onClick={() => handleSelect(path, items[0], key)}
                       className="w-full text-xs text-blue-500 hover:text-blue-700 py-2 px-4 text-left hover:bg-blue-50 border-b border-gray-50"
                     >
                       View all {items.length} {label.toLowerCase()} →

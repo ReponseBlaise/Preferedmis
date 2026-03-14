@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { workerAPI, projectAPI } from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, Users, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -12,6 +13,13 @@ const Workers = () => {
   const [editingWorker, setEditingWorker] = useState(null);
   const [selectedProject, setSelectedProject] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // Auto-fill search from global search navigation
+  useEffect(() => {
+    const s = searchParams.get('search');
+    if (s) setSearchTerm(s);
+  }, [searchParams]);
   const [showFilters, setShowFilters] = useState(false);
   const [filterPaymentType, setFilterPaymentType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
