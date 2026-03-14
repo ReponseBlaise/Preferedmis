@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Users, Calendar, Package,
   FolderKanban, MessageSquare, LogOut, Menu, X, UserCog, Shield,
-  Bell, FileText, Megaphone
+  Bell, Megaphone
 } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';
+import GlobalSearch from '../common/GlobalSearch';
 import api from '../../services/api';
 
 const Layout = () => {
@@ -60,7 +61,6 @@ const Layout = () => {
     { path: '/projects', icon: FolderKanban, label: t('projects'), roles: ['manager'] },
     { path: '/messages', icon: MessageSquare, label: t('messages'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/users', icon: UserCog, label: 'Users', roles: ['manager'] },
-    { path: '/documents', icon: FileText, label: t('documents'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/updates', icon: Megaphone, label: t('updates'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/audit', icon: Shield, label: 'Audit Logs', roles: ['manager'] }
   ];
@@ -134,24 +134,23 @@ const Layout = () => {
         {/* Header */}
         <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
               <button 
                 onClick={() => setSidebarOpen(true)} 
-                className="lg:hidden p-2 hover:bg-gray-100 rounded transition-colors"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded transition-colors shrink-0"
               >
                 <Menu size={24} />
               </button>
-              <div>
-                <h1 className="text-lg md:text-xl font-semibold text-gray-800">
+              <div className="hidden sm:block shrink-0">
+                <h1 className="text-lg font-semibold text-gray-800">
                   {t('welcome')}, {user?.full_name?.split(' ')[0]}
                 </h1>
-                <p className="text-xs text-gray-600 hidden sm:block">
-                  {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
+                <p className="text-xs text-gray-600">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </p>
+              </div>
+              <div className="flex-1 max-w-md">
+                <GlobalSearch />
               </div>
             </div>
             
