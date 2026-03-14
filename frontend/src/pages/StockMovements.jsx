@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import api from '../services/api';
+import { stockMovementAPI, projectAPI, inventoryAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Plus, TrendingUp, TrendingDown, Package, X } from 'lucide-react';
 
@@ -38,8 +38,8 @@ const StockMovements = () => {
 
   const fetchItems = async () => {
     try {
-      const data = await api.getInventory();
-      setItems(data || []);
+      const res = await inventoryAPI.getAll();
+      setItems(res.data || []);
     } catch (error) {
       toast.error('Failed to load inventory items');
     }
@@ -47,8 +47,8 @@ const StockMovements = () => {
 
   const fetchProjects = async () => {
     try {
-      const data = await api.getProjects();
-      setProjects(data || []);
+      const res = await projectAPI.getAll();
+      setProjects(res.data || []);
     } catch (error) {
       console.error('Failed to fetch projects');
     }
@@ -57,8 +57,8 @@ const StockMovements = () => {
   const fetchMovements = async () => {
     if (!selectedItem) return;
     try {
-      const data = await api.stockMovementAPI.getByItem(selectedItem.id);
-      setMovements(data || []);
+      const res = await stockMovementAPI.getByItem(selectedItem.id);
+      setMovements(res.data || []);
     } catch (error) {
       console.error('Failed to fetch movements');
     }
@@ -67,8 +67,8 @@ const StockMovements = () => {
   const fetchSummary = async () => {
     if (!selectedItem) return;
     try {
-      const data = await api.stockMovementAPI.getSummary(selectedItem.id);
-      setSummary(data);
+      const res = await stockMovementAPI.getSummary(selectedItem.id);
+      setSummary(res.data);
     } catch (error) {
       console.error('Failed to fetch summary');
     }
@@ -78,11 +78,12 @@ const StockMovements = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.stockMovementAPI.record(form);
+      await stockMovementAPI.record(form);
       toast.success(`Stock ${form.movement_type === 'in' ? 'received' : 'issued'} successfully`);
       setShowModal(false);
       resetForm();
-      fetchItems();
+      const res = await inventoryAPI.getAll();
+      setItems(res.data || []);
       if (selectedItem) {
         fetchMovements();
         fetchSummary();
@@ -180,7 +181,7 @@ const StockMovements = () => {
                       <Package size={20} />
                       <span className="text-sm font-medium">Remaining</span>
                     </div>
-                    <p className="text-2xl font-bold text-blue-700">{summary.remaining || 0}</p>
+                    <p className="text-2xl font-bold text-blue-700">{summary.remaining_stock || 0}</p>
                   </div>
                 </div>
               )}

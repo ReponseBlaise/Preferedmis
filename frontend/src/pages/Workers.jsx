@@ -46,7 +46,7 @@ const Workers = () => {
     if (selectedProject) {
       fetchWorkers();
     }
-  }, [selectedProject, filterPaymentType, filterStatus]);
+  }, [selectedProject, filterPaymentType, filterStatus, filterPosition]);
 
   const fetchProjects = async () => {
     try {
@@ -166,12 +166,12 @@ const Workers = () => {
     worker.position?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate stats
+  // Calculate stats from filtered results
   const stats = {
-    total: workers.length,
-    daily: workers.filter(w => w.payment_type === 'daily').length,
-    monthly: workers.filter(w => w.payment_type === 'monthly').length,
-    active: workers.filter(w => w.is_active !== false).length
+    total: filteredWorkers.length,
+    daily: filteredWorkers.filter(w => w.payment_type === 'daily').length,
+    monthly: filteredWorkers.filter(w => w.payment_type === 'monthly').length,
+    active: filteredWorkers.filter(w => w.is_active === true).length
   };
 
   return (

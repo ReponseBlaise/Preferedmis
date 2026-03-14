@@ -5,7 +5,7 @@ exports.recordMovement = async (req, res) => {
   try {
     const { inventory_item_id, movement_type, quantity, unit_price, reference_number, notes, movement_date } = req.body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('stock_movements')
       .insert({
         inventory_item_id,
@@ -36,7 +36,7 @@ exports.getMovements = async (req, res) => {
     const { inventory_item_id } = req.params;
     const { start_date, end_date, movement_type } = req.query;
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('stock_movements')
       .select('*, inventory_items(name, unit)')
       .eq('inventory_item_id', inventory_item_id)
@@ -69,7 +69,7 @@ exports.getStockSummary = async (req, res) => {
     const { inventory_item_id } = req.params;
 
     // Get total stock in
-    const { data: stockIn, error: inError } = await supabase
+    const { data: stockIn, error: inError } = await supabaseAdmin
       .from('stock_movements')
       .select('quantity')
       .eq('inventory_item_id', inventory_item_id)
@@ -78,7 +78,7 @@ exports.getStockSummary = async (req, res) => {
     if (inError) throw inError;
 
     // Get total stock out
-    const { data: stockOut, error: outError } = await supabase
+    const { data: stockOut, error: outError } = await supabaseAdmin
       .from('stock_movements')
       .select('quantity')
       .eq('inventory_item_id', inventory_item_id)
@@ -107,7 +107,7 @@ exports.getProjectMovements = async (req, res) => {
     const { project_id } = req.params;
     const { start_date, end_date, movement_type } = req.query;
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('stock_movements')
       .select('*, inventory_items(name, unit)')
       .eq('project_id', project_id)
@@ -139,7 +139,7 @@ exports.deleteMovement = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('stock_movements')
       .delete()
       .eq('id', id);
