@@ -46,6 +46,8 @@ router.delete('/workers/:id', auth, getUserProjects, authorize('manager'), audit
 // Attendance routes
 router.post('/attendance', auth, getUserProjects, authorize('employee', 'manager', 'storeman'), auditLog('CREATE', 'attendance'), attendanceController.recordAttendance);
 router.get('/attendance', auth, getUserProjects, attendanceController.getAttendance);
+router.put('/attendance/:id', auth, getUserProjects, authorize('employee', 'manager', 'storeman'), auditLog('UPDATE', 'attendance'), attendanceController.updateAttendance);
+router.delete('/attendance/:id', auth, getUserProjects, authorize('manager'), auditLog('DELETE', 'attendance'), attendanceController.deleteAttendance);
 router.get('/attendance/payroll', auth, getUserProjects, attendanceController.getPayrollReport);
 
 // Inventory routes

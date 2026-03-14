@@ -131,6 +131,69 @@ exports.getAttendance = async (req, res) => {
   }
 };
 
+exports.updateAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days_worked, comment } = req.body;
+
+    if (days_worked === undefined || days_worked < 0 || days_worked > 1) {
+      return res.status(400).json({ error: 'Days worked must be between 0 and 1' });
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from('attendance')
+      .select('attendance_date')
+      .eq('id', id)
+      .single();
+
+    if (!existing) return res.status(404).json({ error: 'Attendance record not found' });
+
+    // No future date edits
+    if (new Date(existing.attendance_date) > new Date()) {
+      return res.status(400).json({ error: 'Cannot edit attendance for a future date' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('attendance')
+      .update({ days_worked, comment, recorded_by: req.user.id })
+      .eq('id', id)
+      .select('*, workers:worker_id(full_name, position, rate_per_day)')
+      .single();
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('Update attendance error:', error);
+    res.status(500).json({ error: 'Failed to update attendance' });
+  }
+};
+
+exports.deleteAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: existing } = await supabaseAdmin
+      .from('attendance')
+      .select('attendance_date')
+      .eq('id', id)
+      .single();
+
+    if (!existing) return res.status(404).json({ error: 'Attendance record not found' });
+
+    if (new Date(existing.attendance_date) > new Date()) {
+      return res.status(400).json({ error: 'Cannot delete attendance for a future date' });
+    }
+
+    const { error } = await supabaseAdmin.from('attendance').delete().eq('id', id);
+    if (error) throw error;
+
+    res.json({ message: 'Attendance record deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete attendance' });
+  }
+};
+
 exports.getPayrollReport = async (req, res) => {
   try {
     const { project_id, start_date, end_date } = req.query;

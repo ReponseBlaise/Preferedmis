@@ -49,6 +49,8 @@ export const workerAPI = {
 export const attendanceAPI = {
   record: (data) => api.post('/attendance', data),
   getAll: (params) => api.get('/attendance', { params }),
+  update: (id, data) => api.put(`/attendance/${id}`, data),
+  delete: (id) => api.delete(`/attendance/${id}`),
   getPayroll: (params) => api.get('/attendance/payroll', { params })
 };
 

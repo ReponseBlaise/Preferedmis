@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { attendanceAPI, workerAPI, projectAPI, reportAPI } from '../services/api';
 import { useTranslation } from 'react-i18next';
-import { Check, X, FileSpreadsheet, FileText, CheckSquare, Square, AlertCircle } from 'lucide-react';
+import { Check, X, FileSpreadsheet, FileText, CheckSquare, Square, AlertCircle, Edit2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, isAfter, startOfDay, parseISO } from 'date-fns';
 
@@ -14,6 +14,9 @@ const Attendance = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [attendance, setAttendance] = useState({});
   const [alreadyRecorded, setAlreadyRecorded] = useState(false);
+  const [existingRecords, setExistingRecords] = useState({});
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({});
   const [showPayroll, setShowPayroll] = useState(false);
   const [payrollData, setPayrollData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,9 +50,14 @@ const Attendance = () => {
 
   const checkExisting = async () => {
     try {
-      const response = await attendanceAPI.getAll({ project_id: selectedProject, date: selectedDate });
-      setAlreadyRecorded((response.data || []).length > 0);
-    } catch { setAlreadyRecorded(false); }
+      const response = await attendanceAPI.getAll({ project_id: selectedProject, start_date: selectedDate, end_date: selectedDate });
+      const records = response.data || [];
+      const recordMap = {};
+      records.forEach(r => { recordMap[r.worker_id] = r; });
+      setExistingRecords(recordMap);
+      setAlreadyRecorded(records.length > 0);
+      setEditMode(false);
+    } catch { setAlreadyRecorded(false); setExistingRecords({}); }
   };
 
   const isFutureDate = isAfter(startOfDay(parseISO(selectedDate)), startOfDay(new Date()));
@@ -91,6 +99,64 @@ const Attendance = () => {
     const updated = {};
     workers.forEach(w => { updated[w.id] = { present: false, days: 0, comment: attendance[w.id]?.comment || '' }; });
     setAttendance(updated);
+  };
+
+  const startEdit = () => {
+    // Pre-fill editData from existing records
+    const init = {};
+    workers.forEach(w => {
+      const rec = existingRecords[w.id];
+      init[w.id] = {
+        days: rec ? parseFloat(rec.days_worked) : 0,
+        comment: rec ? (rec.comment || '') : '',
+        present: rec ? parseFloat(rec.days_worked) > 0 : false
+      };
+    });
+    setEditData(init);
+    setEditMode(true);
+  };
+
+  const handleSaveEdits = async () => {
+    setSubmitting(true);
+    try {
+      const updates = [];
+      for (const [workerId, data] of Object.entries(editData)) {
+        const existing = existingRecords[workerId];
+        if (existing) {
+          // Update existing record
+          updates.push(attendanceAPI.update(existing.id, {
+            days_worked: data.present ? data.days : 0,
+            comment: data.comment
+          }));
+        }
+        // Note: we don't add new workers here — only edit existing ones
+      }
+      await Promise.all(updates);
+      toast.success('Attendance updated successfully');
+      setEditMode(false);
+      checkExisting();
+    } catch { toast.error('Failed to save edits'); }
+    finally { setSubmitting(false); }
+  };
+
+  const cancelEdit = () => { setEditMode(false); setEditData({}); };
+
+  const setEditDays = (workerId, days) => {
+    setEditData(prev => ({
+      ...prev,
+      [workerId]: { ...prev[workerId], days: parseFloat(days), present: parseFloat(days) > 0 }
+    }));
+  };
+
+  const toggleEditPresent = (workerId) => {
+    setEditData(prev => ({
+      ...prev,
+      [workerId]: {
+        ...prev[workerId],
+        present: !prev[workerId]?.present,
+        days: !prev[workerId]?.present ? 1.0 : 0
+      }
+    }));
   };
 
   const handleSubmit = async () => {
@@ -197,12 +263,32 @@ const Attendance = () => {
           </div>
 
           {/* Already recorded warning */}
-          {alreadyRecorded && (
-            <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4 flex items-center gap-2">
-              <AlertCircle size={18} className="text-amber-600 shrink-0" />
-              <p className="text-sm text-amber-800 font-medium">
-                Attendance has already been recorded for this date and project. You cannot submit again.
-              </p>
+          {alreadyRecorded && !editMode && (
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={18} className="text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-800 font-medium">
+                  Attendance already recorded for this date.
+                </p>
+              </div>
+              <button
+                onClick={startEdit}
+                className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 shrink-0"
+              >
+                <Edit2 size={14} /> Edit
+              </button>
+            </div>
+          )}
+
+          {editMode && (
+            <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 mb-4 flex items-center justify-between">
+              <p className="text-sm text-blue-800 font-medium">✏️ Edit mode — modify attendance then save</p>
+              <div className="flex gap-2">
+                <button onClick={cancelEdit} className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100">Cancel</button>
+                <button onClick={handleSaveEdits} disabled={submitting} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-60">
+                  <Save size={14} /> {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -237,7 +323,25 @@ const Attendance = () => {
               </thead>
               <tbody>
                 {workers.map((worker, idx) => {
-                  const isPresent = attendance[worker.id]?.present;
+                  const rec = existingRecords[worker.id];
+                  const ed = editData[worker.id];
+                  const isPresent = editMode
+                    ? (ed?.present ?? false)
+                    : alreadyRecorded
+                      ? (rec ? parseFloat(rec.days_worked) > 0 : false)
+                      : (attendance[worker.id]?.present ?? true);
+                  const days = editMode
+                    ? (ed?.days ?? 0)
+                    : alreadyRecorded
+                      ? parseFloat(rec?.days_worked ?? 0)
+                      : (attendance[worker.id]?.days ?? 1.0);
+                  const comment = editMode
+                    ? (ed?.comment ?? '')
+                    : alreadyRecorded
+                      ? (rec?.comment ?? '')
+                      : (attendance[worker.id]?.comment ?? '');
+                  const locked = !editMode && (alreadyRecorded || isFutureDate);
+
                   return (
                     <tr key={worker.id} className={`border-b transition-colors ${isPresent ? 'bg-green-50' : 'bg-red-50'}`}>
                       <td className="px-3 py-2 text-gray-500 font-mono">{idx + 1}</td>
@@ -246,8 +350,11 @@ const Attendance = () => {
                       <td className="px-3 py-2 text-gray-600">{worker.rate_per_day} RWF</td>
                       <td className="px-3 py-2 text-center">
                         <button
-                          onClick={() => !alreadyRecorded && !isFutureDate && togglePresent(worker.id)}
-                          disabled={alreadyRecorded || isFutureDate}
+                          onClick={() => {
+                            if (editMode) toggleEditPresent(worker.id);
+                            else if (!locked) togglePresent(worker.id);
+                          }}
+                          disabled={locked}
                           className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto transition-colors ${
                             isPresent ? 'bg-green-600 text-white' : 'bg-red-400 text-white'
                           } disabled:opacity-60 disabled:cursor-not-allowed`}
@@ -263,12 +370,13 @@ const Attendance = () => {
                           {[0.25, 0.5, 0.75, 1.0].map(val => (
                             <button
                               key={val}
-                              onClick={() => !alreadyRecorded && !isFutureDate && setDays(worker.id, val)}
-                              disabled={!isPresent || alreadyRecorded || isFutureDate}
+                              onClick={() => {
+                                if (editMode) setEditDays(worker.id, val);
+                                else if (!locked) setDays(worker.id, val);
+                              }}
+                              disabled={!isPresent || locked}
                               className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                attendance[worker.id]?.days === val
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                days === val ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                               } disabled:opacity-40 disabled:cursor-not-allowed`}
                             >
                               {val}
@@ -280,18 +388,18 @@ const Attendance = () => {
                         <input
                           type="text"
                           placeholder="e.g. sick, half day..."
-                          value={attendance[worker.id]?.comment || ''}
-                          onChange={(e) => setAttendance(prev => ({
-                            ...prev,
-                            [worker.id]: { ...prev[worker.id], comment: e.target.value }
-                          }))}
-                          disabled={alreadyRecorded || isFutureDate}
+                          value={comment}
+                          onChange={(e) => {
+                            if (editMode) setEditData(prev => ({ ...prev, [worker.id]: { ...prev[worker.id], comment: e.target.value } }));
+                            else if (!locked) setAttendance(prev => ({ ...prev, [worker.id]: { ...prev[worker.id], comment: e.target.value } }));
+                          }}
+                          disabled={locked}
                           className="input-field text-xs w-full disabled:opacity-60"
                         />
                       </td>
                     </tr>
                   );
-                })}
+                }))
               </tbody>
             </table>
           </div>
