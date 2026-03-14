@@ -76,6 +76,11 @@ exports.getWorkers = async (req, res) => {
       query = query.eq('is_active', is_active === 'true');
     }
 
+    if (req.query.search) {
+      const s = req.query.search;
+      query = query.or(`full_name.ilike.%${s}%,position.ilike.%${s}%,phone.ilike.%${s}%`);
+    }
+
     query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;

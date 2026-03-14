@@ -53,6 +53,11 @@ exports.getProjects = async (req, res) => {
       query = query.eq('status', status);
     }
 
+    if (req.query.search) {
+      const s = req.query.search;
+      query = query.or(`name.ilike.%${s}%,description.ilike.%${s}%`);
+    }
+
     query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
