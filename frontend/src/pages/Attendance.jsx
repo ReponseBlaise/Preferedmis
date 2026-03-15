@@ -233,11 +233,10 @@ const Attendance = () => {
                 <button
                   key={project.id}
                   onClick={() => setSelectedProject(project.id)}
-                  className={`px-4 py-3 rounded-lg border-2 transition-all text-left ${
-                    selectedProject === project.id
+                  className={`px-4 py-3 rounded-lg border-2 transition-all text-left ${selectedProject === project.id
                       ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
-                  }`}
+                    }`}
                 >
                   {project.name}
                 </button>
@@ -355,9 +354,8 @@ const Attendance = () => {
                             else if (!locked) togglePresent(worker.id);
                           }}
                           disabled={locked}
-                          className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto transition-colors ${
-                            isPresent ? 'bg-green-600 text-white' : 'bg-red-400 text-white'
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto transition-colors ${isPresent ? 'bg-green-600 text-white' : 'bg-red-400 text-white'
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
                         >
                           {isPresent ? <Check size={18} /> : <X size={18} />}
                         </button>
@@ -375,9 +373,8 @@ const Attendance = () => {
                                 else if (!locked) setDays(worker.id, val);
                               }}
                               disabled={!isPresent || locked}
-                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                days === val ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              } disabled:opacity-40 disabled:cursor-not-allowed`}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${days === val ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                } disabled:opacity-40 disabled:cursor-not-allowed`}
                             >
                               {val}
                             </button>
@@ -399,7 +396,7 @@ const Attendance = () => {
                       </td>
                     </tr>
                   );
-                }))
+                })}
               </tbody>
             </table>
           </div>
