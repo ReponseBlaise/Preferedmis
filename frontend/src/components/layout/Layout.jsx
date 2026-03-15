@@ -80,20 +80,19 @@ const Layout = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } fixed lg:static inset-y-0 left-0 z-30 w-64 bg-primary-700 text-white transition-transform duration-300 flex flex-col`}>
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } fixed lg:static inset-y-0 left-0 z-30 w-64 bg-primary-700 text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-4 flex items-center justify-between border-b border-primary-600">
           <h2 className="text-xl font-bold">Preferred</h2>
-          <button 
-            onClick={() => setSidebarOpen(false)} 
+          <button
+            onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 hover:bg-primary-600 rounded transition-colors"
           >
             <X size={20} />
@@ -106,11 +105,10 @@ const Layout = () => {
               key={item.path}
               to={item.path}
               onClick={closeSidebarOnMobile}
-              className={`flex items-center gap-4 px-4 py-3 transition-colors ${
-                isActive(item.path) 
-                  ? 'bg-primary-800 border-l-4 border-secondary-500' 
+              className={`flex items-center gap-4 px-4 py-3 transition-colors ${isActive(item.path)
+                  ? 'bg-primary-800 border-l-4 border-secondary-500'
                   : 'hover:bg-primary-600'
-              }`}
+                }`}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -136,8 +134,8 @@ const Layout = () => {
         <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3 flex-1">
-              <button 
-                onClick={() => setSidebarOpen(true)} 
+              <button
+                onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded transition-colors shrink-0"
               >
                 <Menu size={24} />
@@ -154,7 +152,7 @@ const Layout = () => {
                 <GlobalSearch />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {/* Notifications Bell */}
               <button
