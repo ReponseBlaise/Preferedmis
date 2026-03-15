@@ -10,20 +10,19 @@ const { supabaseAdmin } = require('../config/supabase');
  * - Vonage: https://vonage.com
  */
 async function sendSMS(phoneNumber, message) {
+  let smsLog = null;
   try {
     // Log the SMS attempt
-    const { data: smsLog, error: insertError } = await supabaseAdmin
+    const { data, error: insertError } = await supabaseAdmin
       .from('sms_logs')
-      .insert({
-        recipient_phone: phoneNumber,
-        message: message,
-        status: 'pending'
-      })
+      .insert({ recipient_phone: phoneNumber, message, status: 'pending' })
       .select()
       .single();
 
     if (insertError) {
       console.error('Error logging SMS:', insertError);
+    } else {
+      smsLog = data;
     }
 
     // TODO: Implement actual SMS sending with your provider
@@ -81,16 +80,14 @@ async function sendSMS(phoneNumber, message) {
     return { success: true, messageId: result.sid };
     */
 
-    // For now, just mark as sent (simulation mode)
     console.log(`[SMS SIMULATION] To: ${phoneNumber}, Message: ${message}`);
-    
-    await supabaseAdmin
-      .from('sms_logs')
-      .update({
-        status: 'sent',
-        provider: 'simulation'
-      })
-      .eq('id', smsLog.id);
+
+    if (smsLog?.id) {
+      await supabaseAdmin
+        .from('sms_logs')
+        .update({ status: 'sent', provider: 'simulation' })
+        .eq('id', smsLog.id);
+    }
 
     return { success: true, messageId: 'simulated' };
 
@@ -98,13 +95,12 @@ async function sendSMS(phoneNumber, message) {
     console.error('Send SMS error:', error);
 
     // Log the failure
-    await supabaseAdmin
-      .from('sms_logs')
-      .update({
-        status: 'failed',
-        error_message: error.message
-      })
-      .where({ recipient_phone: phoneNumber });
+    if (smsLog?.id) {
+      await supabaseAdmin
+        .from('sms_logs')
+        .update({ status: 'failed', error_message: error.message })
+        .eq('id', smsLog.id);
+    }
 
     throw error;
   }

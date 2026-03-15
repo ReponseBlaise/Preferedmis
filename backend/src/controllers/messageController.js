@@ -54,7 +54,7 @@ exports.sendMessage = async (req, res) => {
     await supabaseAdmin.from('notifications').insert({
       user_id: receiver_id,
       title: `New Message: ${replySubject}`,
-      message: `You have a new message from ${req.user.full_name}`,
+      message: `You have a new message from ${req.user.full_name || req.user.email}`,
       type: 'message',
       action_url: '/messages'
     });

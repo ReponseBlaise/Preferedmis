@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import api, { projectAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { 
   Upload, File, Share2, Trash2, Download, Eye, 
@@ -65,8 +65,8 @@ const Documents = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await api.getProjects();
-      setProjects(response);
+      const res = await projectAPI.getAll();
+      setProjects(res.data || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
     }

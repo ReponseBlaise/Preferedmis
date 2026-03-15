@@ -43,7 +43,7 @@ const Dashboard = () => {
         total: workers.length,
         daily: workers.filter(w => w.payment_type === 'daily').length,
         monthly: workers.filter(w => w.payment_type === 'monthly').length,
-        active: workers.filter(w => w.is_active !== false).length,
+        active: workers.filter(w => w.is_active === true).length,
         inactive: workers.filter(w => w.is_active === false).length,
       });
     } catch {}

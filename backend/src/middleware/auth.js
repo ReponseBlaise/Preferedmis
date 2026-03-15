@@ -4,12 +4,22 @@ const { supabaseAdmin } = require('../config/supabase');
 const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!process.env.JWT_SECRET) {
+      console.error('FATAL: JWT_SECRET is not set');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
     
     const { data: user, error } = await supabaseAdmin
       .from('users')

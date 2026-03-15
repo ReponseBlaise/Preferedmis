@@ -51,22 +51,30 @@ const Chat = () => {
     if (!selectedUser) return;
     try {
       const [received, sent] = await Promise.all([
-        api.messages.getAll({ type: 'received', sender_id: selectedUser.id }),
-        api.messages.getAll({ type: 'sent', receiver_id: selectedUser.id })
+        api.messages.getAll({ type: 'received' }),
+        api.messages.getAll({ type: 'sent' })
       ]);
-      
-      const allMessages = [...(received || []), ...(sent || [])]
+
+      const receivedList = Array.isArray(received) ? received.filter(m =>
+        m.sender_id === selectedUser.id || m.receiver_id === selectedUser.id
+      ) : [];
+      const sentList = Array.isArray(sent) ? sent.filter(m =>
+        m.receiver_id === selectedUser.id
+      ) : [];
+
+      const allMessages = [...receivedList, ...sentList]
+        .filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      
+
       setMessages(allMessages);
-      
+
       // Mark unread messages as read
-      const unread = received.filter(m => !m.is_read);
+      const unread = receivedList.filter(m => !m.is_read && m.sender_id === selectedUser.id);
       for (const msg of unread) {
-        await api.messages.markAsRead(msg.id);
+        api.messages.markAsRead(msg.id).catch(() => {});
       }
     } catch (error) {
-      console.error('Failed to fetch messages');
+      console.error('Failed to fetch messages', error);
     }
   };
 

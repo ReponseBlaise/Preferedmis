@@ -1,5 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
-const { sendEmailNotification } = require('../services/emailService');
+const { sendEmail } = require('../services/emailService');
 const { sendSMS } = require('../services/smsService');
 
 // Create a public update
@@ -266,7 +266,7 @@ async function notifyUsersAboutUpdate(update) {
 
       // Send email for high/urgent priority
       if (['high', 'urgent'].includes(update.priority)) {
-        await sendEmailNotification(
+        await sendEmail(
           user.email,
           title,
           `

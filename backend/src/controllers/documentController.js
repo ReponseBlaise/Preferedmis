@@ -1,7 +1,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 const path = require('path');
 const fs = require('fs').promises;
-const { sendEmailNotification } = require('../services/emailService');
+const { sendEmail } = require('../services/emailService');
 const { sendSMS } = require('../services/smsService');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
@@ -519,7 +519,7 @@ async function sendShareNotification(userId, document, sharedBy, type, message) 
     });
 
     // Send email
-    await sendEmailNotification(
+    await sendEmail(
       user.email,
       title,
       `

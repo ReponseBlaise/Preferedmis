@@ -3,18 +3,22 @@ const { supabaseAdmin } = require('../config/supabase');
 // Record stock movement (in or out)
 exports.recordMovement = async (req, res) => {
   try {
-    const { inventory_item_id, movement_type, quantity, unit_price, reference_number, notes, movement_date } = req.body;
+    const { inventory_item_id, project_id, movement_type, quantity, unit_price, reference_number, notes, movement_date } = req.body;
+
+    if (!inventory_item_id) return res.status(400).json({ error: 'Inventory item is required' });
+    if (!movement_type || !['in', 'out'].includes(movement_type)) return res.status(400).json({ error: 'Movement type must be in or out' });
+    if (!quantity || parseFloat(quantity) <= 0) return res.status(400).json({ error: 'Quantity must be greater than 0' });
 
     const { data, error } = await supabaseAdmin
       .from('stock_movements')
       .insert({
         inventory_item_id,
-        project_id: req.userProjects === 'all' ? null : req.userProjects[0],
+        project_id: project_id || null,
         movement_type,
-        quantity,
-        unit_price,
-        reference_number,
-        notes,
+        quantity: parseFloat(quantity),
+        unit_price: unit_price ? parseFloat(unit_price) : null,
+        reference_number: reference_number || null,
+        notes: notes || null,
         movement_date: movement_date || new Date().toISOString().split('T')[0],
         created_by: req.user.id
       })

@@ -48,15 +48,16 @@ const AuditLogs = () => {
   };
 
   const handleReset = () => {
-    setFilters({
+    const reset = {
       action: '',
       table_name: '',
       user_id: '',
       start_date: '',
       end_date: ''
-    });
+    };
+    setFilters(reset);
     setLoading(true);
-    setTimeout(() => fetchLogs(), 100);
+    fetchLogs();
   };
 
   const getActionColor = (action) => {

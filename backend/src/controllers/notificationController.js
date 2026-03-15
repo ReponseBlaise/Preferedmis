@@ -13,21 +13,21 @@ exports.sendSystemUpdateToAll = async (req, res) => {
       return res.status(400).json({ error: 'Title and details are required' });
     }
 
-    // Get all users with emails
-    const result = await pool.query(
-      'SELECT email, name FROM users WHERE email IS NOT NULL AND email != \'\' '
-    );
+    const { data: users, error: usersError } = await supabaseAdmin
+      .from('users')
+      .select('email, full_name')
+      .eq('is_active', true)
+      .not('email', 'is', null);
 
-    if (result.rows.length === 0) {
+    if (usersError) throw usersError;
+    if (!users || users.length === 0) {
       return res.status(404).json({ error: 'No users with email addresses found' });
     }
 
-    const emails = result.rows.map(row => row.email);
     const results = [];
-
-    for (const user of result.rows) {
+    for (const user of users) {
       try {
-        const html = systemUpdateTemplate(title, details, user.name);
+        const html = systemUpdateTemplate(title, details, user.full_name);
         await emailService.sendEmail(user.email, `System Update: ${title}`, html);
         results.push({ email: user.email, success: true });
       } catch (error) {
@@ -36,13 +36,11 @@ exports.sendSystemUpdateToAll = async (req, res) => {
     }
 
     const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
-
     res.json({
       message: 'System update notifications sent',
-      total: emails.length,
+      total: users.length,
       successful: successCount,
-      failed: failCount,
+      failed: users.length - successCount,
       results
     });
   } catch (error) {
@@ -57,54 +55,49 @@ exports.sendSystemUpdateToAll = async (req, res) => {
 exports.sendProjectUpdate = async (req, res) => {
   try {
     const { projectId, updateType, details } = req.body;
-    const userId = req.user?.id;
 
     if (!projectId || !updateType || !details) {
       return res.status(400).json({ error: 'Project ID, update type, and details are required' });
     }
 
-    // Get project name and members
-    const projectResult = await pool.query(
-      'SELECT project_name FROM projects WHERE id = $1',
-      [projectId]
-    );
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single();
 
-    if (projectResult.rows.length === 0) {
+    if (projectError || !project) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    const projectName = projectResult.rows[0].project_name;
+    const { data: members, error: membersError } = await supabaseAdmin
+      .from('project_members')
+      .select('users:user_id (email, full_name)')
+      .eq('project_id', projectId);
 
-    // Get project members with emails
-    const membersResult = await pool.query(`
-      SELECT u.email, u.name 
-      FROM users u
-      INNER JOIN project_members pm ON u.id = pm.user_id
-      WHERE pm.project_id = $1 AND u.email IS NOT NULL
-    `, [projectId]);
-
-    if (membersResult.rows.length === 0) {
+    if (membersError) throw membersError;
+    if (!members || members.length === 0) {
       return res.status(404).json({ error: 'No project members with email addresses found' });
     }
 
     const results = [];
-
-    for (const member of membersResult.rows) {
+    for (const member of members) {
+      const u = member.users;
+      if (!u?.email) continue;
       try {
-        const html = projectUpdateTemplate(projectName, updateType, details, member.name);
-        await emailService.sendEmail(member.email, `Project Update: ${projectName}`, html);
-        results.push({ email: member.email, success: true });
+        const html = projectUpdateTemplate(project.name, updateType, details, u.full_name);
+        await emailService.sendEmail(u.email, `Project Update: ${project.name}`, html);
+        results.push({ email: u.email, success: true });
       } catch (error) {
-        results.push({ email: member.email, success: false, error: error.message });
+        results.push({ email: u.email, success: false, error: error.message });
       }
     }
 
     const successCount = results.filter(r => r.success).length;
-
     res.json({
       message: 'Project update notifications sent',
-      project: projectName,
-      total: membersResult.rows.length,
+      project: project.name,
+      total: results.length,
       successful: successCount,
       results
     });
@@ -125,25 +118,21 @@ exports.sendTaskAssignment = async (req, res) => {
       return res.status(400).json({ error: 'User ID, task name, project name, and due date are required' });
     }
 
-    // Get user email
-    const userResult = await pool.query(
-      'SELECT email, name FROM users WHERE id = $1 AND email IS NOT NULL',
-      [userId]
-    );
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('email, full_name')
+      .eq('id', userId)
+      .not('email', 'is', null)
+      .single();
 
-    if (userResult.rows.length === 0) {
+    if (userError || !user) {
       return res.status(404).json({ error: 'User not found or has no email' });
     }
 
-    const user = userResult.rows[0];
-    const html = taskAssignmentTemplate(taskName, projectName, dueDate, user.name);
-
+    const html = taskAssignmentTemplate(taskName, projectName, dueDate, user.full_name);
     await emailService.sendEmail(user.email, 'New Task Assigned', html);
 
-    res.json({
-      message: 'Task assignment notification sent',
-      email: user.email
-    });
+    res.json({ message: 'Task assignment notification sent', email: user.email });
   } catch (error) {
     console.error('Send task assignment error:', error);
     res.status(500).json({ error: 'Failed to send task assignment notification' });

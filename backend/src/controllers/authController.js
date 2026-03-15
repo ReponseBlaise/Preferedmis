@@ -1,10 +1,20 @@
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabaseAdmin } = require('../config/supabase');
 
 exports.register = async (req, res) => {
   try {
     const { email, password, full_name, phone, role, project_ids } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !full_name || !role) {
+      return res.status(400).json({ error: 'Email, password, full name and role are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    if (!['manager', 'employee', 'storeman'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be manager, employee, or storeman' });
+    }
 
     // Check if user exists
     const { data: existingUser } = await supabaseAdmin
@@ -70,10 +80,10 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Get user from database
+    // Get user from database — only safe fields
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('*')
+      .select('id, email, full_name, phone, role, is_active')
       .eq('email', email)
       .eq('is_active', true)
       .single();
@@ -98,8 +108,6 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE }
     );
-
-    delete user.password;
 
     res.json({ token, user });
   } catch (error) {

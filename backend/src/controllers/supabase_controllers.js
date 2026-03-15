@@ -149,44 +149,30 @@ exports.inventory = {
       const { project_id, start_date, end_date } = req.query;
       let query = supabaseAdmin
         .from('inventory_items')
-        .select(`
-          total_price,
-          inventory_categories (
-            name
-          )
-        `)
+        .select('quantity, unit_price, inventory_categories(name)')
         .eq('project_id', project_id);
 
-      if (start_date) {
-        query = query.gte('purchase_date', start_date);
-      }
-
-      if (end_date) {
-        query = query.lte('purchase_date', end_date);
-      }
+      if (start_date) query = query.gte('purchase_date', start_date);
+      if (end_date) query = query.lte('purchase_date', end_date);
 
       const { data, error } = await query;
-
       if (error) throw error;
 
-      // Group by category
       const categories = {};
       data.forEach(item => {
         const catName = item.inventory_categories?.name || 'Uncategorized';
+        const itemTotal = parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
         if (!categories[catName]) {
           categories[catName] = { category: catName, item_count: 0, total_value: 0 };
         }
         categories[catName].item_count++;
-        categories[catName].total_value += parseFloat(item.total_price || 0);
+        categories[catName].total_value += itemTotal;
       });
 
       const categoryArray = Object.values(categories);
       const totalSpent = categoryArray.reduce((sum, cat) => sum + cat.total_value, 0);
 
-      res.json({
-        categories: categoryArray,
-        total_spent: totalSpent
-      });
+      res.json({ categories: categoryArray, total_spent: totalSpent });
     } catch (error) {
       console.error('Inventory report error:', error);
       res.status(500).json({ error: 'Failed to generate inventory report' });
@@ -199,7 +185,7 @@ exports.inventory = {
 
       const { data: items, error: itemsError } = await supabaseAdmin
         .from('inventory_items')
-        .select('total_price')
+        .select('quantity, unit_price')
         .eq('project_id', project_id);
 
       if (itemsError) throw itemsError;
@@ -211,7 +197,8 @@ exports.inventory = {
 
       if (expensesError) throw expensesError;
 
-      const itemsTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+      const itemsTotal = items.reduce((sum, item) =>
+        sum + parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0), 0);
       const expensesTotal = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
 
       res.json({ total_spent: itemsTotal + expensesTotal });
