@@ -59,7 +59,6 @@ const Layout = () => {
     { path: '/attendance', icon: Calendar, label: t('attendance'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/inventory', icon: Package, label: t('inventory'), roles: ['manager', 'storeman'] },
     { path: '/stock-movements', icon: TrendingUp, label: 'Stock Movements', roles: ['manager', 'storeman'] },
-    { path: '/documents', icon: FileText, label: 'Documents', roles: ['manager', 'employee', 'storeman'] },
     { path: '/projects', icon: FolderKanban, label: t('projects'), roles: ['manager'] },
     { path: '/messages', icon: MessageSquare, label: t('messages'), roles: ['manager', 'employee', 'storeman'] },
     { path: '/users', icon: UserCog, label: 'Users', roles: ['manager'] },

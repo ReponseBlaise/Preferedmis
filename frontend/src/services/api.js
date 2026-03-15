@@ -143,11 +143,6 @@ export const documentAPI = {
 };
 
 export const updatesAPI = {
-  create: (data) => api.post('/updates', data),
-  getAll: (params) => api.get('/updates', { params }),
-  getOne: (id) => api.get(`/updates/${id}`),
-  update: (id, data) => api.put(`/updates/${id}`, data),
-  delete: (id) => api.delete(`/updates/${id}`)
 };
 
 export default {
