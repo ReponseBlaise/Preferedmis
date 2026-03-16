@@ -9,6 +9,7 @@ import Workers from './pages/Workers';
 import Attendance from './pages/Attendance';
 import Inventory from './pages/Inventory';
 import Projects from './pages/Projects';
+import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import Users from './pages/Users';
 import AuditLogs from './pages/AuditLogs';
@@ -48,7 +49,8 @@ function App() {
             <Route path="stock-movements" element={<PrivateRoute roles={['manager', 'storeman']}><StockMovements /></PrivateRoute>} />
             {/* <Route path="documents" element={<PrivateRoute roles={['manager', 'employee', 'storeman']}><Documents /></PrivateRoute>} /> */}
             <Route path="projects" element={<PrivateRoute roles={['manager']}><Projects /></PrivateRoute>} />
-            <Route path="messages" element={<PrivateRoute><Chat /></PrivateRoute>} />
+            <Route path="messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
+            <Route path="chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
             <Route path="users" element={<PrivateRoute roles={['manager']}><Users /></PrivateRoute>} />
             <Route path="audit" element={<PrivateRoute roles={['manager']}><AuditLogs /></PrivateRoute>} />
             <Route path="updates" element={<PrivateRoute roles={['manager', 'employee', 'storeman']}><PublicUpdates /></PrivateRoute>} />

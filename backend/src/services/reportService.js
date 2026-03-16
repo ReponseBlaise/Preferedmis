@@ -2,6 +2,21 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { supabaseAdmin } = require('../config/supabase');
 
+const countPaydays = (startDate, endDate) => {
+  let count = 0;
+  let current = new Date(startDate);
+  current.setDate(1);
+
+  while (current <= new Date(endDate)) {
+    let payday = new Date(current.getFullYear(), current.getMonth(), 28);
+    if (payday >= new Date(startDate) && payday <= new Date(endDate)) {
+      count++;
+    }
+    current.setMonth(current.getMonth() + 1);
+  }
+  return count;
+}
+
 exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Payroll Report');
@@ -41,34 +56,19 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   headerRow.alignment = { horizontal: 'center' };
 
   // Fetch data
-  const { data: workers } = await supabaseAdmin
-    .from('workers')
-    .select('*')
-    .eq('project_id', project_id)
-    .eq('payment_type', 'daily');
-
-  const { data: attendance } = await supabaseAdmin
-    .from('attendance')
-    .select('*')
-    .eq('project_id', project_id)
-    .gte('attendance_date', start_date)
-    .lte('attendance_date', end_date);
-
+  const { data: payrollData } = await exports.getPayrollReportData(project_id, start_date, end_date);
   let grandTotal = 0;
 
-  (workers || []).forEach((w, i) => {
-    const workerAttendance = (attendance || []).filter(a => a.worker_id === w.id);
-    const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked || 0), 0);
-    const total_amount = parseFloat(w.rate_per_day || 0) * total_days_worked;
-    grandTotal += total_amount;
+  (payrollData.workers || []).forEach((w, i) => {
+    grandTotal += w.total_amount;
 
     const row = worksheet.addRow({
       full_name: w.full_name,
       phone: w.phone || '',
       position: w.position || '',
-      rate_per_day: parseFloat(w.rate_per_day || 0),
-      total_days_worked,
-      total_amount
+      rate_per_day: w.rate_per_day,
+      total_days_worked: w.total_days_worked,
+      total_amount: w.total_amount
     });
 
     if (i % 2 === 0) {

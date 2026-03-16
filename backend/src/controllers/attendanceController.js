@@ -194,6 +194,27 @@ exports.deleteAttendance = async (req, res) => {
   }
 };
 
+const countPaydays = (startDate, endDate) => {
+  let count = 0;
+  let current = new Date(startDate);
+  // Start from the first day of the month
+  current.setDate(1);
+
+  while (current <= endDate) {
+    // Construct the payday for the current month
+    let payday = new Date(current.getFullYear(), current.getMonth(), 28);
+    
+    // Check if this payday is within the date range
+    if (payday >= new Date(startDate) && payday <= new Date(endDate)) {
+      count++;
+    }
+
+    // Move to the next month
+    current.setMonth(current.getMonth() + 1);
+  }
+  return count;
+}
+
 exports.getPayrollReport = async (req, res) => {
   try {
     const { project_id, start_date, end_date } = req.query;
@@ -225,20 +246,12 @@ exports.getPayrollReport = async (req, res) => {
 
     // Calculate payroll
     const payrollData = workers
-      .filter(worker => {
-        // For monthly employees, check if period is >= 28 days
-        if (worker.payment_type === 'monthly') {
-          const totalDaysInPeriod = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-          return totalDaysInPeriod >= 28;
-        }
-        // Include all daily workers
-        return true;
-      })
       .map(worker => {
         if (worker.payment_type === 'monthly') {
-          // Monthly employee - full salary if period >= 28 days
-          const totalDaysInPeriod = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-          const salaryAmount = worker.monthly_salary || 0;
+          const numberOfMonths = countPaydays(start_date, end_date);
+          const salaryAmount = (worker.monthly_salary || 0) * numberOfMonths;
+
+          if (numberOfMonths === 0) return null;
 
           return {
             worker_id: worker.id,
@@ -248,8 +261,8 @@ exports.getPayrollReport = async (req, res) => {
             rate_per_day: null,
             monthly_salary: worker.monthly_salary,
             payment_type: worker.payment_type,
-            total_days_worked: totalDaysInPeriod,
-            total_days_in_period: totalDaysInPeriod,
+            total_days_worked: null,
+            total_days_in_period: Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1,
             total_amount: salaryAmount,
             employment_status: worker.is_active ? 'active' : 'inactive'
           };
@@ -273,7 +286,7 @@ exports.getPayrollReport = async (req, res) => {
             employment_status: worker.is_active ? 'active' : 'inactive'
           };
         }
-      });
+      }).filter(Boolean); // remove nulls
 
     const totalPayroll = payrollData.reduce((sum, row) => sum + row.total_amount, 0);
 
