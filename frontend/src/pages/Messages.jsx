@@ -116,17 +116,26 @@ const Messages = () => {
       return;
     }
 
+    setLoading(true);
     try {
       // Send message
-      const response = await api.sendMessage(composeForm);
+      const { data: response } = await api.post('/messages', {
+        ...composeForm,
+        attachments: undefined, // Don't send attachments in this request
+      });
       
       // Upload attachments if any
       if (composeForm.attachments.length > 0 && response.id) {
         for (const attachment of composeForm.attachments) {
+          const formData = new FormData();
+          formData.append('file', attachment);
           try {
-            await api.messages.addAttachment(response.id, attachment);
+            await api.post(`/messages/${response.id}/attachments`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
           } catch (err) {
             console.error('Failed to upload attachment:', err);
+            toast.error(`Failed to upload ${attachment.name}`);
           }
         }
       }
@@ -139,6 +148,8 @@ const Messages = () => {
     } catch (error) {
       console.error('Send error:', error);
       toast.error(error.response?.data?.error || t('failedToSendMessage') || 'Failed to send message');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,41 +236,20 @@ const Messages = () => {
     }
   };
 
-  const handleFileSelect = async (e) => {
+  const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    setUploadingFiles(prev => ({ ...prev, [Date.now()]: true }));
-
-    for (const file of files) {
+    const newAttachments = files.map(file => {
       if (file.size > 10 * 1024 * 1024) {
         toast.error(`File ${file.name} is too large (max 10MB)`);
-        continue;
+        return null;
       }
+      return file;
+    }).filter(Boolean); // Filter out nulls for files that were too large
 
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await api.messages.uploadAttachment('temp', formData);
-        
-        setComposeForm(prev => ({
-          ...prev,
-          attachments: [...prev.attachments, {
-            file_name: file.name,
-            file_path: response.url,
-            file_size: file.size,
-            file_type: file.type
-          }]
-        }));
-        
-        toast.success(t('fileAttached') || 'File attached successfully');
-      } catch (error) {
-        toast.error(t('failedToAttachFile') || 'Failed to attach file');
-      } finally {
-        setUploadingFiles(prev => ({ ...prev, [Date.now()]: false }));
-      }
-    }
+    setComposeForm(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...newAttachments]
+    }));
   };
 
   const removeAttachment = (index) => {
@@ -630,9 +620,9 @@ const Messages = () => {
                     {composeForm.attachments.map((att, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <div className="flex items-center gap-2">
-                          {getAttachmentIcon(att.file_type)}
-                          <span className="text-sm">{att.file_name}</span>
-                          <span className="text-xs text-gray-500">({formatFileSize(att.file_size)})</span>
+                          {getAttachmentIcon(att.type)}
+                          <span className="text-sm">{att.name}</span>
+                          <span className="text-xs text-gray-500">({formatFileSize(att.size)})</span>
                         </div>
                         <button
                           type="button"
