@@ -177,7 +177,7 @@ exports.deleteMessage = async (req, res) => {
     const { id } = req.params;
     const { data: message } = await supabaseAdmin.from('messages').select('sender_id, receiver_id').eq('id', id).single();
     if (!message) return res.status(404).json({ error: 'Message not found' });
-    if (message.sender_id !== req.user.id && message.receiver_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
+    if (message.sender_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
 
     // Delete attachments from Supabase Storage
     const { data: attachments } = await supabaseAdmin.from('message_attachments').select('storage_path').eq('message_id', id);
@@ -205,7 +205,7 @@ exports.uploadAttachment = async (req, res) => {
     // Verify message access
     const { data: message } = await supabaseAdmin.from('messages').select('sender_id, receiver_id').eq('id', id).single();
     if (!message) return res.status(404).json({ error: 'Message not found' });
-    if (message.sender_id !== req.user.id && message.receiver_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
+    if (message.sender_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
 
     const file = req.file;
     const storagePath = `${id}/${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -263,8 +263,8 @@ exports.deleteAttachment = async (req, res) => {
     const { data: attachment } = await supabaseAdmin.from('message_attachments').select('*').eq('id', attachmentId).single();
     if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
 
-    const { data: message } = await supabaseAdmin.from('messages').select('sender_id, receiver_id').eq('id', attachment.message_id).single();
-    if (!message || (message.sender_id !== req.user.id && message.receiver_id !== req.user.id)) return res.status(403).json({ error: 'Access denied' });
+    const { data: message } = await supabaseAdmin.from('messages').select('sender_id').eq('id', attachment.message_id).single();
+    if (!message || message.sender_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
 
     if (attachment.storage_path) {
       await supabaseAdmin.storage.from(BUCKET).remove([attachment.storage_path]);
