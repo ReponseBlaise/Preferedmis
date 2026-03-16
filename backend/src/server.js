@@ -10,7 +10,12 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://mis.preferred.rw',
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  // Allow Vercel preview and production domains
+  'https://preferredmis-frontend.vercel.app',
+  'https://preferredmis-backend.vercel.app',
+  'https://preferredmis.vercel.app',
+  'https://preferredmisui.vercel.app'
 ].filter(Boolean);
 
 app.use(cors({
