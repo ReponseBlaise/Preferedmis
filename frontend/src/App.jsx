@@ -21,9 +21,9 @@ const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) return <div>Loading...</div>;
-  
+
   if (!isAuthenticated) return <Navigate to="/login" />;
-  
+
   if (roles && !roles.includes(user?.role)) {
     return <Navigate to="/dashboard" />;
   }
@@ -38,7 +38,7 @@ function App() {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<Login />} />
-          
+
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<PrivateRoute roles={['manager', 'employee', 'storeman']}><Dashboard /></PrivateRoute>} />
