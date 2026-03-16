@@ -265,7 +265,7 @@ const resources = {
       "login": "Injira",
       "logout": "Sohoka",
       "email": "Imeri",
-      "password": "Ijambo ryibanga",
+      "password": "Ijambobanga",
       "submit": "Ohereza",
       "cancel": "Hagarika",
       "save": "Bika",
@@ -274,11 +274,11 @@ const resources = {
       "search": "Shakisha",
       "filter": "Shungura",
       "export": "Kohereza",
-      "loading": "Birategerezwa...",
+      "loading": "Tegereza...",
       "noData": "Nta makuru ahari",
 
       // Navigation
-      "dashboard": "Ibikubiyemo",
+      "dashboard": "Amakuru yibanze",
       "workers": "Abakozi",
       "attendance": "Kwitabira",
       "inventory": "Ibikoresho",
@@ -288,12 +288,12 @@ const resources = {
       "reports": "Raporo",
 
       // Messages
-      "inbox": "Ubusanduku",
-      "sent": "Byoherejwe",
+      "inbox": "ibyoherejwe",
+      "sent": "Ibyakiriwe",
       "compose": "Ohereza",
       "composeMessage": "Ohereza Ubutumwa",
       "to": "Kuri",
-      "selectRecipient": "Hitamo uwandikira",
+      "selectRecipient": "Hitamo uwo wandikira",
       "subject": "Ingingo",
       "message": "Ubutumwa",
       "send": "Ohereza",
@@ -307,9 +307,9 @@ const resources = {
       "close": "Funga",
       "from": "Kuva",
       "attachments": "Ibyo wiyongereyeho",
-      "priority": "Ingirakamaro",
+      "priority": "Ibyibanze",
       "all": "Byose",
-      "low": "Bito",
+      "low": "Ibito",
       "normal": "Bisanzwe",
       "high": "Byihutirwa",
       "urgent": "Byihutirwa cyane",
@@ -317,7 +317,7 @@ const resources = {
       "searchMessages": "Shakisha ubutumwa...",
       "noMessages": "Nta butumwa buboneka",
       "unknown": "Ntibiramenyekana",
-      "optional": "Bifite choice",
+      "optional": "nubushake kubishyiraho",
       "selectProject": "Hitaro umushinga",
       "markAllRead": "Byose soma",
       "messageSentSuccessfully": "Ubutumwa bwoherejwe neza!",
@@ -337,10 +337,10 @@ const resources = {
       "monthly": "Buri kwezi",
 
       // Attendance
-      "recordAttendance": "Andika Kwitabira",
-      "attendanceDate": "Itariki y'ukwitabira",
+      "recordAttendance": "Andika ubwitabire",
+      "attendanceDate": "Itariki yo kwitabira",
       "daysWorked": "Iminsi yakoze",
-      "comment": "Icyongereza",
+      "comment": "ubutumwa bwinyongera",
 
       // Inventory
       "addItem": "Ongeraho Ikintu",
