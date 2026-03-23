@@ -7,7 +7,8 @@ import {
   Send, Inbox, Mail, MailOpen, Plus, Paperclip, X, Edit2, Trash2,
   Reply, Forward, Eye, AlertCircle, CheckCircle, Clock, FileText,
   Image as ImageIcon, File, ChevronLeft, MoreVertical, Bold, Italic,
-  Search
+  Search, MoreHorizontal, Phone, Video, User, Check, CheckCheck, EyeOff,
+  Star, Flag, Archive, Download, Download as DownloadIcon
 } from 'lucide-react';
 
 const Messages = () => {
@@ -433,60 +434,91 @@ const Messages = () => {
         <div className="divide-y max-h-[60vh] overflow-y-auto">
           {filteredMessages.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <Inbox size={48} className="mx-auto mb-4 opacity-50" />
-              <p>{t('noMessages') || 'No messages found'}</p>
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Inbox size={32} className="text-blue-600" />
+              </div>
+              <p className="text-lg font-medium">{t('noMessages') || 'No messages found'}</p>
+              <p className="text-sm text-gray-500 mt-1">Your message list is empty</p>
             </div>
           ) : (
             filteredMessages.map((message) => (
               <div
                 key={message.id}
                 onClick={() => handleMessageClick(message)}
-                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${!message.is_read && activeTab === 'received' ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                  }`}
+                className={`p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                  !message.is_read && activeTab === 'received' 
+                    ? 'bg-gradient-to-r from-blue-50 to-transparent border-l-4 border-blue-500' 
+                    : 'hover:translate-x-1'
+                }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    {!message.is_read && activeTab === 'received' ? (
-                      <div className="relative">
-                        <Mail size={20} className="text-blue-600" />
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                      </div>
-                    ) : (
-                      <MailOpen size={20} className="text-gray-400" />
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+                      !message.is_read && activeTab === 'received' ? 'bg-blue-600' : 'bg-gradient-to-br from-blue-500 to-blue-600'
+                    }`}>
+                      {activeTab === 'received'
+                        ? (message.sender?.full_name?.charAt(0) || t('unknown').charAt(0))
+                        : (message.receiver?.full_name?.charAt(0) || t('unknown').charAt(0))
+                      }
+                    </div>
+                    {activeTab === 'sent' && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1 gap-2">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`font-medium ${!message.is_read && activeTab === 'received' ? 'text-gray-900' : 'text-gray-700'}`}>
+                        <p className={`font-semibold ${
+                          !message.is_read && activeTab === 'received' ? 'text-gray-900' : 'text-gray-800'
+                        }`}>
                           {activeTab === 'received'
                             ? message.sender?.full_name || t('unknown')
                             : message.receiver?.full_name || t('unknown')}
                         </p>
                         {getPriorityIcon(message.priority)}
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityColor(message.priority)}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full text-white font-medium ${
+                          message.priority === 'urgent' ? 'bg-red-500' :
+                          message.priority === 'high' ? 'bg-orange-500' :
+                          message.priority === 'normal' ? 'bg-blue-500' : 'bg-gray-500'
+                        }`}>
                           {message.priority || 'normal'}
                         </span>
                         {message.edited_at && (
                           <span className="text-xs text-gray-500 italic">• edited</span>
                         )}
                         {message.attachments && message.attachments.length > 0 && (
-                          <Paperclip size={14} className="text-gray-400" />
+                          <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                            <Paperclip size={12} />
+                          </div>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {new Date(message.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {new Date(message.created_at).toLocaleDateString()}
+                        </span>
+                        {activeTab === 'sent' && (
+                          <div className="flex items-center gap-1">
+                            <Eye size={14} className="text-gray-400" />
+                            <CheckCheck size={14} className="text-blue-600" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className={`text-sm mb-1 ${!message.is_read && activeTab === 'received' ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
-                      {message.subject}
-                    </p>
-                    <p className="text-sm text-gray-500 truncate">
-                      {message.message}
-                    </p>
+                    <div className="space-y-1">
+                      <p className={`font-medium ${
+                        !message.is_read && activeTab === 'received' ? 'text-gray-900' : 'text-gray-700'
+                      }`}>
+                        {message.subject}
+                      </p>
+                      <p className={`text-sm ${
+                        !message.is_read && activeTab === 'received' ? 'text-gray-700' : 'text-gray-600'
+                      } truncate`}>
+                        {message.message}
+                      </p>
+                    </div>
                     {/* Show reply count */}
                     {replyMessages[message.id] && replyMessages[message.id].length > 0 && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                      <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full w-fit">
                         <Reply size={12} />
                         <span>{replyMessages[message.id].length} repl{replyMessages[message.id].length > 1 ? 'ies' : 'y'}</span>
                       </div>
