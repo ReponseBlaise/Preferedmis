@@ -68,29 +68,42 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h2 className="text-3xl font-bold text-gray-800">{t('dashboard')}</h2>
-        <select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-          className="input-field max-w-xs"
-        >
-          <option value="">All Projects</option>
-          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('dashboard')}</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {selectedProject 
+              ? projects.find(p => p.id === selectedProject)?.name || 'Selected Project'
+              : 'Overview of all projects'
+            }
+          </p>
+        </div>
+        <div className="w-full sm:w-auto">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Project</label>
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            <option value="">All Projects</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
-            <div className={`${stat.color} p-3 rounded-lg text-white shrink-0`}>
-              <stat.icon size={22} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 truncate">{stat.label}</p>
-              <p className="text-xl font-bold text-gray-800 truncate">{stat.value}</p>
-              <p className="text-xs text-gray-400">{stat.sub}</p>
+          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className={`${stat.color} p-3 rounded-lg text-white shrink-0 shadow-sm`}>
+                <stat.icon size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
+                <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
+              </div>
             </div>
           </div>
         ))}
@@ -120,68 +133,167 @@ const Dashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-base font-semibold mb-4 text-gray-700">Expenses by Type</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-700">Expenses by Type</h3>
+            <div className="text-xs text-gray-500">
+              Total: {(data?.expenses_by_type?.reduce((sum, item) => sum + (item.total || 0), 0) || 0).toLocaleString()} RWF
+            </div>
+          </div>
           {data?.expenses_by_type?.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={data.expenses_by_type}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="expense_type" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => `${v.toLocaleString()} RWF`} />
-                <Bar dataKey="total" fill="#1e40af" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-64 lg:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.expenses_by_type}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="expense_type" 
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${value.toLocaleString()} RWF`, 'Amount']}
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="total" 
+                    fill="url(#colorBar)" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <defs>
+                    <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#1d4ed8" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No expense data</div>
+            <div className="flex items-center justify-center h-64 lg:h-72 text-gray-400 text-sm">
+              <div className="text-center">
+                <div className="mb-2">📊</div>
+                No expense data available
+              </div>
+            </div>
           )}
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-base font-semibold mb-4 text-gray-700">Attendance — Last 7 Days</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-700">Attendance — Last 7 Days</h3>
+            <div className="text-xs text-gray-500">
+              Avg: {data?.attendance_trend?.length > 0 ? Math.round(data.attendance_trend.reduce((sum, item) => sum + (item.workers_present || 0), 0) / data.attendance_trend.length) : 0} workers/day
+            </div>
+          </div>
           {data?.attendance_trend?.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={data.attendance_trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="attendance_date" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="workers_present" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-64 lg:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.attendance_trend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="attendance_date" 
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    labelFormatter={(date) => `Date: ${new Date(date).toLocaleDateString()}`}
+                    formatter={(value) => [`${value} workers`, 'Present']}
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="workers_present" 
+                    stroke="url(#colorLine)"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#10b981' }}
+                    activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+                  />
+                  <defs>
+                    <linearGradient id="colorLine" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No attendance data</div>
+            <div className="flex items-center justify-center h-64 lg:h-72 text-gray-400 text-sm">
+              <div className="text-center">
+                <div className="mb-2">📈</div>
+                No attendance data available
+              </div>
+            </div>
           )}
         </div>
       </div>
 
       {/* Recent Activities */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <h3 className="text-base font-semibold mb-4 text-gray-700">Recent Activities</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-700">Recent Activities</h3>
+          <div className="text-xs text-gray-500">
+            Last {data?.recent_activities?.length || 0} actions
+          </div>
+        </div>
         {data?.recent_activities?.length > 0 ? (
-          <div className="divide-y divide-gray-50">
+          <div className="space-y-3 max-h-64 overflow-y-auto">
             {data.recent_activities.slice(0, 8).map((activity, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5">
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${
-                    activity.action === 'CREATE' ? 'bg-green-500' :
-                    activity.action === 'UPDATE' ? 'bg-blue-500' :
-                    activity.action === 'DELETE' ? 'bg-red-500' : 'bg-gray-400'
-                  }`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      {activity.action} <span className="text-gray-500 font-normal">on {activity.table_name}</span>
-                    </p>
-                    <p className="text-xs text-gray-400">{activity.user_name}</p>
+              <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="flex-shrink-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    activity.action === 'CREATE' ? 'bg-green-100 text-green-600' :
+                    activity.action === 'UPDATE' ? 'bg-blue-100 text-blue-600' :
+                    activity.action === 'DELETE' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {activity.action === 'CREATE' ? '➕' : 
+                     activity.action === 'UPDATE' ? '✏️' : 
+                     activity.action === 'DELETE' ? '🗑️' : '📋'}
                   </div>
                 </div>
-                <span className="text-xs text-gray-400 shrink-0 ml-4">
-                  {new Date(activity.created_at).toLocaleString()}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      activity.action === 'CREATE' ? 'bg-green-100 text-green-700' :
+                      activity.action === 'UPDATE' ? 'bg-blue-100 text-blue-700' :
+                      activity.action === 'DELETE' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {activity.action}
+                    </span>
+                    <span className="text-xs text-gray-500">on {activity.table_name}</span>
+                  </div>
+                  <p className="text-sm text-gray-800 font-medium">{activity.user_name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(activity.created_at).toLocaleString()}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400 text-sm">No recent activities</div>
+          <div className="text-center py-8 text-gray-400 text-sm">
+            <div className="mb-2">📋</div>
+            No recent activities
+          </div>
         )}
       </div>
     </div>
