@@ -234,8 +234,8 @@ const Attendance = () => {
                   key={project.id}
                   onClick={() => setSelectedProject(project.id)}
                   className={`px-4 py-3 rounded-lg border-2 transition-all text-left ${selectedProject === project.id
-                      ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
                     }`}
                 >
                   {project.name}
@@ -451,8 +451,9 @@ const Attendance = () => {
                     <tr>
                       <th className="table-header-cell">Worker Name</th>
                       <th className="table-header-cell">Position</th>
-                      <th className="table-header-cell">Rate/Day</th>
-                      <th className="table-header-cell">Days Worked</th>
+                      <th className="table-header-cell">Payment Type</th>
+                      <th className="table-header-cell">Rate / Salary</th>
+                      <th className="table-header-cell">Days / Periods</th>
                       <th className="table-header-cell">Total Amount</th>
                     </tr>
                   </thead>
@@ -461,13 +462,23 @@ const Attendance = () => {
                       <tr key={worker.worker_id}>
                         <td className="table-cell font-medium">{worker.full_name}</td>
                         <td className="table-cell">{worker.position}</td>
-                        <td className="table-cell">{worker.rate_per_day} RWF</td>
-                        <td className="table-cell">{worker.total_days_worked}</td>
+                        <td className="table-cell capitalize">{worker.payment_type || 'daily'}</td>
+                        {worker.payment_type === 'monthly' ? (
+                          <>
+                            <td className="table-cell">{worker.monthly_salary} RWF/month</td>
+                            <td className="table-cell">{worker.pay_periods} period(s)</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="table-cell">{worker.rate_per_day} RWF/day</td>
+                            <td className="table-cell">{worker.total_days_worked} days</td>
+                          </>
+                        )}
                         <td className="table-cell font-semibold">{worker.total_amount} RWF</td>
                       </tr>
                     ))}
                     <tr className="bg-gray-100 font-bold">
-                      <td colSpan="4" className="table-cell text-right">TOTAL PAYROLL:</td>
+                      <td colSpan="5" className="table-cell text-right">TOTAL PAYROLL:</td>
                       <td className="table-cell text-lg">{payrollData.total_payroll} RWF</td>
                     </tr>
                   </tbody>

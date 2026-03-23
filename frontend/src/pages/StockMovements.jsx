@@ -8,6 +8,7 @@ const StockMovements = () => {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [movements, setMovements] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -25,9 +26,12 @@ const StockMovements = () => {
   });
 
   useEffect(() => {
-    fetchItems();
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [selectedProject]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -38,7 +42,7 @@ const StockMovements = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await inventoryAPI.getAll();
+      const res = await inventoryAPI.getAll(selectedProject ? { project_id: selectedProject } : {});
       setItems(res.data || []);
     } catch (error) {
       toast.error('Failed to load inventory items');
@@ -49,6 +53,7 @@ const StockMovements = () => {
     try {
       const res = await projectAPI.getAll();
       setProjects(res.data || []);
+      if (res.data && res.data.length > 0) setSelectedProject(res.data[0].id);
     } catch (error) {
       console.error('Failed to fetch projects');
     }
@@ -82,7 +87,7 @@ const StockMovements = () => {
       toast.success(`Stock ${form.movement_type === 'in' ? 'received' : 'issued'} successfully`);
       setShowModal(false);
       resetForm();
-      const res = await inventoryAPI.getAll();
+      const res = await inventoryAPI.getAll(selectedProject ? { project_id: selectedProject } : {});
       setItems(res.data || []);
       if (selectedItem) {
         fetchMovements();
@@ -116,13 +121,25 @@ const StockMovements = () => {
           <h1 className="text-3xl font-bold text-gray-800">{t('stockMovements') || 'Stock Movements'}</h1>
           <p className="text-gray-600 mt-1">Track stock in and out</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus size={20} />
-          Record Movement
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            {projects.length === 0 && <option value="">No projects</option>}
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => { resetForm(); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus size={20} />
+            Record Movement
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -136,9 +153,8 @@ const StockMovements = () => {
               <div
                 key={item.id}
                 onClick={() => setSelectedItem(item)}
-                className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedItem?.id === item.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
-                }`}
+                className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${selectedItem?.id === item.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -216,11 +232,10 @@ const StockMovements = () => {
                               {new Date(mov.movement_date).toLocaleDateString()}
                             </td>
                             <td className="px-4 py-3">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                mov.movement_type === 'in'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${mov.movement_type === 'in'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                                }`}>
                                 {mov.movement_type === 'in' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                 {mov.movement_type.toUpperCase()}
                               </span>

@@ -151,7 +151,7 @@ exports.getAllUsers = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   try {
-    const { full_name, phone, role, is_active, project_ids } = req.body;
+    const { full_name, phone, role, is_active, project_ids, password } = req.body;
     const updates = {};
 
     if (full_name !== undefined) updates.full_name = full_name;
@@ -187,6 +187,18 @@ exports.updateUser = async (req, res) => {
           .from('project_members')
           .insert(projectMembers);
       }
+    }
+
+    // Update password in Supabase Auth if provided
+    if (password !== undefined) {
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      }
+      const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(
+        req.params.id,
+        { password }
+      );
+      if (pwError) throw pwError;
     }
 
     res.json(data);
@@ -238,7 +250,7 @@ exports.deleteUser = async (req, res) => {
       // This is safer and maintains data integrity
       const { error: deactiveError } = await supabaseAdmin
         .from('users')
-        .update({ 
+        .update({
           is_active: false,
           full_name: `[DELETED] ${userId.substring(0, 8)}`,
           phone: null
@@ -254,7 +266,7 @@ exports.deleteUser = async (req, res) => {
         console.log('Auth user deletion skipped or failed:', authErr.message);
       }
 
-      return res.json({ 
+      return res.json({
         message: 'User deactivated instead of deleted (user has data dependencies)',
         deactivated: true,
         dependencies: dependencies,
@@ -279,7 +291,7 @@ exports.deleteUser = async (req, res) => {
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to delete user',
       details: error.message,
       code: error.code
