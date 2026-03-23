@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import {
   Send, Inbox, Mail, MailOpen, Plus, Paperclip, X, Edit2, Trash2,
   Reply, Forward, Eye, AlertCircle, CheckCircle, Clock, FileText,
-  Image as ImageIcon, File, ChevronLeft, MoreVertical, Bold, Italic
+  Image as ImageIcon, File, ChevronLeft, MoreVertical, Bold, Italic,
+  Search
 } from 'lucide-react';
 
 const Messages = () => {
@@ -45,7 +46,7 @@ const Messages = () => {
     fetchUsers();
     fetchProjects();
     fetchUnreadCount();
-    
+
     // Poll for new messages every 30 seconds
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
@@ -65,10 +66,10 @@ const Messages = () => {
       setLoading(true);
       const params = { type: activeTab };
       if (filterPriority !== 'all') params.priority = filterPriority;
-      
+
       const data = await api.messages.getAll(params);
       setMessages(data || []);
-      
+
       // Load replies for each message
       const replies = {};
       for (const msg of data || []) {
@@ -110,7 +111,7 @@ const Messages = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    
+
     if (!composeForm.receiver_id || !composeForm.subject || !composeForm.message) {
       toast.error('Please fill in all required fields');
       return;
@@ -123,7 +124,7 @@ const Messages = () => {
         ...composeForm,
         attachments: undefined, // Don't send attachments in this request
       });
-      
+
       // Upload attachments if any
       if (composeForm.attachments.length > 0 && response.id) {
         for (const attachment of composeForm.attachments) {
@@ -139,7 +140,7 @@ const Messages = () => {
           }
         }
       }
-      
+
       toast.success(t('messageSentSuccessfully') || 'Message sent successfully!');
       setShowCompose(false);
       resetComposeForm();
@@ -168,7 +169,7 @@ const Messages = () => {
         parent_id: parentId,
         project_id: originalMessage.project_id
       });
-      
+
       toast.success(t('replySent') || 'Reply sent successfully!');
       setReplyMessages(prev => ({ ...prev, [parentId]: undefined }));
       fetchMessages();
@@ -288,7 +289,7 @@ const Messages = () => {
 
   const filteredMessages = messages.filter(msg => {
     if (searchQuery && !msg.subject.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !msg.message.toLowerCase().includes(searchQuery.toLowerCase())) {
+      !msg.message.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     return true;
@@ -363,7 +364,7 @@ const Messages = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
-            <SearchIcon className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -373,7 +374,7 @@ const Messages = () => {
             {t('filters') || 'Filters'}
           </button>
         </div>
-        
+
         {showFilters && (
           <div className="mt-4 pt-4 border-t">
             <div className="flex flex-wrap gap-4">
@@ -403,11 +404,10 @@ const Messages = () => {
         <div className="flex border-b">
           <button
             onClick={() => setActiveTab('received')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium ${
-              activeTab === 'received'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 font-medium ${activeTab === 'received'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             <Inbox size={20} />
             {t('inbox') || 'Inbox'}
@@ -419,11 +419,10 @@ const Messages = () => {
           </button>
           <button
             onClick={() => setActiveTab('sent')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium ${
-              activeTab === 'sent'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 font-medium ${activeTab === 'sent'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             <Send size={20} />
             {t('sent') || 'Sent'}
@@ -442,9 +441,8 @@ const Messages = () => {
               <div
                 key={message.id}
                 onClick={() => handleMessageClick(message)}
-                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  !message.is_read && activeTab === 'received' ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                }`}
+                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${!message.is_read && activeTab === 'received' ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  }`}
               >
                 <div className="flex items-start gap-4">
                   <div className="mt-1">
@@ -614,7 +612,7 @@ const Messages = () => {
                   />
                   <span className="text-sm text-gray-500">Max 10MB per file</span>
                 </div>
-                
+
                 {composeForm.attachments.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {composeForm.attachments.map((att, index) => (
@@ -863,18 +861,5 @@ const Messages = () => {
     </div>
   );
 };
-
-// Helper icons
-const SearchIcon = ({ size, className }) => (
-  <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const DownloadIcon = ({ size, className }) => (
-  <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-  </svg>
-);
 
 export default Messages;

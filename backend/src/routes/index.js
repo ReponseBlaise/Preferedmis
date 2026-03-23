@@ -115,8 +115,8 @@ router.post('/notifications/custom', auth, authorize('manager'), notificationCon
 router.post('/notifications/test', notificationController.testEmailConfig);
 router.get('/notifications', auth, notificationController.getUserNotifications);
 router.get('/notifications/unread-count', auth, notificationController.getUnreadCount);
-router.put('/notifications/:id/read', auth, notificationController.markNotificationAsRead);
 router.put('/notifications/read-all', auth, notificationController.markAllAsRead);
+router.put('/notifications/:id/read', auth, notificationController.markNotificationAsRead);
 router.delete('/notifications/:id', auth, notificationController.deleteNotification);
 
 // Document feature removed: all document routes deleted.

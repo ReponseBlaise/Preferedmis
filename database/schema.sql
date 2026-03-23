@@ -121,22 +121,6 @@ CREATE TABLE messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Notifications (Enhanced for document sharing and public updates)
-CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    type VARCHAR(50),
-    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
-    update_id UUID REFERENCES public_updates(id) ON DELETE CASCADE,
-    action_url VARCHAR(500),
-    is_read BOOLEAN DEFAULT false,
-    email_sent BOOLEAN DEFAULT false,
-    sms_sent BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Documents Table
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -181,6 +165,23 @@ CREATE TABLE public_updates (
     expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Notifications (Enhanced for document sharing and public updates)
+-- NOTE: Must be defined AFTER documents and public_updates due to FK references
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    update_id UUID REFERENCES public_updates(id) ON DELETE CASCADE,
+    action_url VARCHAR(500),
+    is_read BOOLEAN DEFAULT false,
+    email_sent BOOLEAN DEFAULT false,
+    sms_sent BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Document Activity Log Table
