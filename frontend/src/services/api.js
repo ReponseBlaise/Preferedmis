@@ -48,6 +48,7 @@ export const workerAPI = {
 
 export const attendanceAPI = {
   record: (data) => api.post('/attendance', data),
+  recordBulk: (data) => api.post('/attendance/bulk', data),
   getAll: (params) => api.get('/attendance', { params }),
   update: (id, data) => api.put(`/attendance/${id}`, data),
   delete: (id) => api.delete(`/attendance/${id}`),
@@ -166,6 +167,7 @@ export default {
 
   // Attendance
   recordAttendance: (data) => attendanceAPI.record(data).then(res => res.data),
+  recordBulkAttendance: (data) => attendanceAPI.recordBulk(data).then(res => res.data),
   getAttendance: (params) => attendanceAPI.getAll(params).then(res => res.data),
   getPayrollReport: (params) => attendanceAPI.getPayroll(params).then(res => res.data),
 

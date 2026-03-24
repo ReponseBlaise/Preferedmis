@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
+const { sendSMS } = require('../services/smsService');
 
 exports.recordAttendance = async (req, res) => {
   try {
@@ -78,9 +79,186 @@ exports.recordAttendance = async (req, res) => {
       return res.status(400).json({ error: 'Failed to record attendance. Please check all fields are correct.' });
     }
 
+    // Send SMS notification to worker with their daily results
+    try {
+      const { data: workerDetails } = await supabaseAdmin
+        .from('workers')
+        .select('full_name, phone, rate_per_day')
+        .eq('id', worker_id)
+        .single();
+
+      if (workerDetails?.phone) {
+        const daysWorked = days_worked || 1.0;
+        const dailyRate = workerDetails.rate_per_day || 0;
+        const dailyEarnings = daysWorked * dailyRate;
+        const dateStr = new Date(attendance_date).toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        });
+
+        const message = `Preferred Contractors: Dear ${workerDetails.full_name}, you worked ${daysWorked === 1.0 ? 'full day' : `${daysWorked} day(s)`} on ${dateStr}. Your earnings: ${dailyEarnings.toLocaleString()} RWF. Thank you for your hard work!`;
+
+        // Send SMS in background (don't wait for it to complete)
+        sendSMS(workerDetails.phone, message).catch(err => {
+          console.error('Failed to send SMS notification:', err);
+        });
+      }
+    } catch (smsError) {
+      console.error('SMS notification error:', smsError);
+      // Don't fail the attendance recording if SMS fails
+    }
+
     res.status(201).json(data);
   } catch (error) {
     console.error('Record attendance error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
+  }
+};
+
+// Bulk attendance recording with SMS notifications
+exports.recordBulkAttendance = async (req, res) => {
+  try {
+    const { project_id, attendance_date, workers } = req.body;
+
+    if (!project_id) {
+      return res.status(400).json({ error: 'Please select a project' });
+    }
+    if (!attendance_date) {
+      return res.status(400).json({ error: 'Please select an attendance date' });
+    }
+    if (!workers || !Array.isArray(workers) || workers.length === 0) {
+      return res.status(400).json({ error: 'Please provide workers data' });
+    }
+
+    const results = [];
+    const smsPromises = [];
+
+    for (const workerData of workers) {
+      const { worker_id, days_worked, comment } = workerData;
+
+      if (!worker_id) {
+        results.push({ worker_id, success: false, error: 'Worker ID is required' });
+        continue;
+      }
+
+      // Check if worker is a daily worker
+      const { data: worker } = await supabaseAdmin
+        .from('workers')
+        .select('payment_type, full_name, phone, rate_per_day')
+        .eq('id', worker_id)
+        .single();
+
+      if (!worker) {
+        results.push({ worker_id, success: false, error: 'Worker not found' });
+        continue;
+      }
+
+      if (worker.payment_type === 'monthly') {
+        results.push({ 
+          worker_id, 
+          success: false, 
+          error: `Cannot record attendance for monthly employee "${worker.full_name}". Monthly employees are paid fixed salary and do not record daily attendance.` 
+        });
+        continue;
+      }
+
+      if (days_worked && (days_worked < 0 || days_worked > 1)) {
+        results.push({ worker_id, success: false, error: 'Days worked must be between 0 and 1' });
+        continue;
+      }
+
+      try {
+        // Check if attendance exists
+        const { data: existing } = await supabaseAdmin
+          .from('attendance')
+          .select('id')
+          .eq('worker_id', worker_id)
+          .eq('attendance_date', attendance_date)
+          .single();
+
+        let data, error;
+
+        if (existing) {
+          // Update existing
+          ({ data, error } = await supabaseAdmin
+            .from('attendance')
+            .update({
+              days_worked: days_worked || 1.0,
+              comment,
+              recorded_by: req.user.id
+            })
+            .eq('id', existing.id)
+            .select()
+            .single());
+        } else {
+          // Insert new
+          ({ data, error } = await supabaseAdmin
+            .from('attendance')
+            .insert({
+              worker_id,
+              project_id,
+              attendance_date,
+              days_worked: days_worked || 1.0,
+              comment,
+              recorded_by: req.user.id
+            })
+            .select()
+            .single());
+        }
+
+        if (error) {
+          results.push({ worker_id, success: false, error: error.message });
+          continue;
+        }
+
+        results.push({ worker_id, success: true, data });
+
+        // Prepare SMS notification
+        if (worker.phone) {
+          const daysWorked = days_worked || 1.0;
+          const dailyRate = worker.rate_per_day || 0;
+          const dailyEarnings = daysWorked * dailyRate;
+          const dateStr = new Date(attendance_date).toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+
+          const message = `Preferred Contractors: Dear ${worker.full_name}, you worked ${daysWorked === 1.0 ? 'full day' : `${daysWorked} day(s)`} on ${dateStr}. Your earnings: ${dailyEarnings.toLocaleString()} RWF. Thank you for your hard work!`;
+
+          // Send SMS in background
+          smsPromises.push(
+            sendSMS(worker.phone, message).catch(err => {
+              console.error(`Failed to send SMS to worker ${worker_id}:`, err);
+            })
+          );
+        }
+
+      } catch (workerError) {
+        results.push({ worker_id, success: false, error: workerError.message });
+      }
+    }
+
+    // Wait for all SMS to be sent (but don't fail if some fail)
+    Promise.allSettled(smsPromises).then(() => {
+      console.log('All SMS notifications processed');
+    });
+
+    res.status(201).json({
+      message: 'Bulk attendance recorded successfully',
+      results,
+      summary: {
+        total: workers.length,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk attendance error:', error);
     res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
   }
 };

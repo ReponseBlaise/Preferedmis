@@ -20,10 +20,13 @@ const Attendance = () => {
   const [showPayroll, setShowPayroll] = useState(false);
   const [payrollData, setPayrollData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [dateRange, setDateRange] = useState({
     start_date: format(new Date(new Date().setDate(1)), 'yyyy-MM-dd'),
     end_date: today
   });
+  const [bulkWorkers, setBulkWorkers] = useState([]);
+  const [showBulk, setShowBulk] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => { fetchProjects(); }, []);
@@ -216,11 +219,16 @@ const Attendance = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-gray-800">{t('attendance')}</h2>
-        <button onClick={() => setShowPayroll(!showPayroll)} className="btn-secondary">
-          {showPayroll ? 'Record Attendance' : t('payrollReport')}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowPayroll(!showPayroll)} className="btn-secondary">
+            {showPayroll ? 'Record Attendance' : t('payrollReport')}
+          </button>
+          <button onClick={() => setShowBulk(!showBulk)} className="btn-secondary">
+            {showBulk ? 'Hide Bulk' : 'Bulk Attendance'}
+          </button>
+        </div>
       </div>
 
       {!showPayroll ? (
@@ -413,6 +421,187 @@ const Attendance = () => {
             >
               {submitting ? 'Saving...' : `Submit Attendance — ${presentCount} present, ${workers.length - presentCount} absent`}
             </button>
+          )}
+
+          {/* Bulk Attendance Section */}
+          {showBulk && (
+            <div className="mt-8 border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Bulk Attendance Recording</h3>
+              <p className="text-sm text-gray-600 mb-4">Record attendance for multiple workers at once. SMS notifications will be sent to each worker with their daily results.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    max={today}
+                    onChange={handleDateChange}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                  <select
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="input-field"
+                  >
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>{project.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-700">
+                      <th className="text-left px-3 py-2 rounded-tl-lg">#</th>
+                      <th className="text-left px-3 py-2">Worker</th>
+                      <th className="text-left px-3 py-2">Position</th>
+                      <th className="text-left px-3 py-2">Rate/Day</th>
+                      <th className="text-center px-3 py-2">Status</th>
+                      <th className="text-center px-3 py-2">Days</th>
+                      <th className="text-left px-3 py-2 rounded-tr-lg">Comment</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workers.map((worker, idx) => {
+                      const workerData = bulkWorkers.find(w => w.worker_id === worker.id) || {
+                        worker_id: worker.id,
+                        days_worked: 1.0,
+                        comment: '',
+                        present: true
+                      };
+
+                      return (
+                        <tr key={worker.id} className={`border-b transition-colors ${workerData.present ? 'bg-green-50' : 'bg-red-50'}`}>
+                          <td className="px-3 py-2 text-gray-500 font-mono">{idx + 1}</td>
+                          <td className="px-3 py-2 font-semibold text-gray-900">{worker.full_name}</td>
+                          <td className="px-3 py-2 text-gray-600">{worker.position}</td>
+                          <td className="px-3 py-2 text-gray-600">{worker.rate_per_day} RWF</td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => {
+                                setBulkWorkers(prev => prev.map(w => 
+                                  w.worker_id === worker.id 
+                                    ? { ...w, present: !w.present, days_worked: !w.present ? 1.0 : 0 }
+                                    : w
+                                ));
+                              }}
+                              className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto transition-colors ${workerData.present ? 'bg-green-600 text-white' : 'bg-red-400 text-white'
+                                }`}
+                            >
+                              {workerData.present ? <Check size={18} /> : <X size={18} />}
+                            </button>
+                            <span className={`text-xs font-medium ${workerData.present ? 'text-green-700' : 'text-red-600'}`}>
+                              {workerData.present ? 'Present' : 'Absent'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-1 justify-center">
+                              {[0.25, 0.5, 0.75, 1.0].map(val => (
+                                <button
+                                  key={val}
+                                  onClick={() => {
+                                    setBulkWorkers(prev => prev.map(w => 
+                                      w.worker_id === worker.id 
+                                        ? { ...w, days_worked: val, present: val > 0 }
+                                        : w
+                                    ));
+                                  }}
+                                  disabled={!workerData.present}
+                                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${workerData.days_worked === val ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                  {val}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="text"
+                              placeholder="e.g. sick, half day..."
+                              value={workerData.comment || ''}
+                              onChange={(e) => {
+                                setBulkWorkers(prev => prev.map(w => 
+                                  w.worker_id === worker.id 
+                                    ? { ...w, comment: e.target.value }
+                                    : w
+                                ));
+                              }}
+                              className="input-field text-xs w-full"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {workers.length > 0 && (
+                <div className="flex gap-4 mt-4">
+                  <button
+                    onClick={() => {
+                      setBulkWorkers(workers.map(w => ({
+                        worker_id: w.id,
+                        days_worked: 1.0,
+                        comment: '',
+                        present: true
+                      })));
+                    }}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <CheckSquare size={18} /> Mark All Present
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBulkWorkers(workers.map(w => ({
+                        worker_id: w.id,
+                        days_worked: 0,
+                        comment: '',
+                        present: false
+                      })));
+                    }}
+                    className="btn-outline flex items-center gap-2"
+                  >
+                    <Square size={18} /> Mark All Absent
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (isFutureDate) { toast.error('Cannot record attendance for a future date'); return; }
+                      
+                      const workersData = bulkWorkers.filter(w => w.days_worked > 0);
+                      if (workersData.length === 0) { toast.error('No present workers to record'); return; }
+
+                      setBulkSubmitting(true);
+                      try {
+                        const response = await attendanceAPI.recordBulk({
+                          project_id: selectedProject,
+                          attendance_date: selectedDate,
+                          workers: workersData
+                        });
+                        
+                        toast.success(`Bulk attendance recorded successfully: ${response.data.summary.successful} successful, ${response.data.summary.failed} failed`);
+                      } catch (error) {
+                        console.error('Bulk attendance error:', error);
+                        toast.error('Failed to record bulk attendance');
+                      } finally {
+                        setBulkSubmitting(false);
+                      }
+                    }}
+                    disabled={bulkSubmitting}
+                    className="btn-primary ml-auto disabled:opacity-60"
+                  >
+                    {bulkSubmitting ? 'Recording...' : `Record Bulk Attendance (${bulkWorkers.filter(w => w.days_worked > 0).length} workers)`}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       ) : (
