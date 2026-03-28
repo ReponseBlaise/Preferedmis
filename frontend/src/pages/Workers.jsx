@@ -110,7 +110,8 @@ const Workers = () => {
     try {
       const submitData = {
         ...formData,
-        project_id: selectedProject,
+        // Only set project_id for new workers; for updates, keep the original
+        ...(editingWorker ? {} : { project_id: selectedProject }),
         rate_per_day:
           formData.payment_type === "daily" ? formData.rate_per_day : null,
         monthly_salary:

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import { useTranslation } from "react-i18next";
-import { Check, X, AlertCircle, Edit2, Save } from "lucide-react";
+import { Check, X, AlertCircle, Edit2, Save, CheckSquare, Square } from "lucide-react";
 import toast from "react-hot-toast";
 import { format, isAfter, startOfDay, parseISO } from "date-fns";
 
@@ -306,8 +306,7 @@ const Attendance = () => {
         <h2 className="text-3xl font-bold text-gray-800">{t("attendance")}</h2>
       </div>
 
-      {
-        <div className="card">
+      <div className="card">
           {/* Project Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -562,7 +561,7 @@ const Attendance = () => {
             </button>
           )}
         </div>
-      }
+      </div>
     </div>
   );
 };

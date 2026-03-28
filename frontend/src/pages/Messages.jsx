@@ -230,8 +230,6 @@ const Messages = () => {
       toast.error(t('failedToMarkAsRead') || 'Failed to mark messages as read');
     }
   };
-    }
-  };
 
   const handleMessageClick = async (message) => {
     setSelectedMessage(message);
