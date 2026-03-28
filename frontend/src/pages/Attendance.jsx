@@ -327,7 +327,6 @@ const Attendance = () => {
           </button>
         )}
       </div>
-      </div>
     </div>
   );
 };
