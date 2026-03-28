@@ -199,25 +199,6 @@ const Layout = () => {
             </Link>
           ))}
         </nav>
-
-        {/* User Info in Sidebar */}
-        <div
-          className={`p-4 border-t ${isDarkMode ? "border-gray-700" : "border-primary-600"}`}
-        >
-          <div className="text-sm">
-            <p className="font-semibold truncate">{user?.full_name}</p>
-            <p
-              className={`text-xs truncate ${isDarkMode ? "text-gray-400" : "text-primary-200"}`}
-            >
-              {user?.email}
-            </p>
-            <span
-              className={`inline-block mt-2 px-2 py-1 rounded text-xs ${isDarkMode ? "bg-gray-700" : "bg-primary-800"}`}
-            >
-              {user?.role}
-            </span>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
