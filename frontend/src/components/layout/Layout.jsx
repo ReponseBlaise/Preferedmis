@@ -319,8 +319,8 @@ const Layout = () => {
           <div
             className={`flex items-center justify-between text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
           >
-            <p className="hidden sm:block">© 2024 Preferred Contractors</p>
-            <p>v1.0.0</p>
+            <p className="hidden sm:block">© 2026 Preferred Contractors</p>
+            <p>version 1.0.0</p>
           </div>
         </footer>
       </div>
