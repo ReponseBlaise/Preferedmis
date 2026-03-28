@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  reportAPI,
-  projectAPI,
-  attendanceAPI,
-  inventoryAPI,
-} from "../services/api";
+import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTranslation } from "react-i18next";
@@ -45,10 +40,10 @@ const Reports = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await projectAPI.getAll();
-      setProjects(response.data || []);
-      if (response.data && response.data.length > 0) {
-        setSelectedProject(response.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data || []);
+      if (data && data.length > 0) {
+        setSelectedProject(data[0].id);
       }
     } catch (error) {
       toast.error("Failed to load projects");
@@ -71,15 +66,15 @@ const Reports = () => {
 
       // Fetch all report data
       const [payrollRes, inventoryRes, attendanceRes] = await Promise.all([
-        attendanceAPI.getPayroll(params).catch(() => ({ data: [] })),
-        inventoryAPI.getReport(params).catch(() => ({ data: [] })),
-        attendanceAPI.getAll(params).catch(() => ({ data: [] })),
+        api.getPayrollReport(params).catch(() => []),
+        api.getInventoryReport(params).catch(() => []),
+        api.getAttendance(params).catch(() => []),
       ]);
 
       setReportData({
-        payroll: payrollRes.data,
-        inventory: inventoryRes.data,
-        attendance: attendanceRes.data,
+        payroll: payrollRes,
+        inventory: inventoryRes,
+        attendance: attendanceRes,
       });
     } catch (error) {
       toast.error("Failed to fetch report data");
@@ -91,7 +86,7 @@ const Reports = () => {
   const handleExportPayroll = async () => {
     try {
       setLoading(true);
-      const response = await reportAPI.exportPayrollExcel({
+      const response = await api.exportPayrollExcel({
         project_id: selectedProject,
         start_date: startDate,
         end_date: endDate,
@@ -120,7 +115,7 @@ const Reports = () => {
   const handleExportInventory = async () => {
     try {
       setLoading(true);
-      const response = await reportAPI.exportInventoryExcel({
+      const response = await api.exportInventoryExcel({
         project_id: selectedProject,
         start_date: startDate,
         end_date: endDate,

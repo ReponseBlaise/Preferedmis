@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { documentAPI, userAPI } from '../services/api';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -47,8 +47,8 @@ const Documents = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await documentAPI.getAll();
-      setDocuments(response.data || []);
+      const data = await api.getDocuments();
+      setDocuments(data || []);
     } catch (error) {
       toast.error('Failed to load documents');
     } finally {
@@ -58,8 +58,8 @@ const Documents = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await userAPI.getAll();
-      setAllUsers(response.data || []);
+      const data = await api.getUsers();
+      setAllUsers(data || []);
     } catch (error) {
       console.error('Failed to load users');
     }
@@ -111,7 +111,7 @@ const Documents = () => {
     formDataToSend.append('category', formData.category);
 
     try {
-      await documentAPI.upload(formDataToSend);
+      await api.uploadDocument(formDataToSend);
       toast.success('Document uploaded successfully');
       setShowUploadModal(false);
       resetForm();
@@ -129,7 +129,7 @@ const Documents = () => {
     }
 
     try {
-      await documentAPI.share(selectedDocument.id, { user_ids: selectedUsers });
+      await api.shareDocument(selectedDocument.id, { user_ids: selectedUsers });
       toast.success('Document shared successfully');
       setShowShareModal(false);
       setSelectedUsers([]);
@@ -141,7 +141,7 @@ const Documents = () => {
 
   const handleDownload = async (documentId) => {
     try {
-      const response = await documentAPI.download(documentId);
+      const response = await api.downloadDocument(documentId);
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
@@ -158,7 +158,7 @@ const Documents = () => {
   const handleDelete = async (documentId) => {
     if (window.confirm('Are you sure you want to delete this document?')) {
       try {
-        await documentAPI.delete(documentId);
+        await api.deleteDocument(documentId);
         toast.success('Document deleted successfully');
         fetchDocuments();
       } catch (error) {
