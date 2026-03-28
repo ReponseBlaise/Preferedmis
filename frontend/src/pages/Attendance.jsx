@@ -172,7 +172,6 @@ const Attendance = () => {
           updates.push(
             api.updateAttendance(existing.id, {
               days_worked: data.present ? data.days : 0,
-              comment: data.comment,
             }),
           );
         }
