@@ -110,7 +110,7 @@ exports.getMessages = async (req, res) => {
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(401).json({ error: "User not authenticated" });
     }
 
     let query = supabaseAdmin.from("messages").select("*");
@@ -123,15 +123,13 @@ exports.getMessages = async (req, res) => {
     } else if (type === "received") {
       query = query.eq("receiver_id", userId);
     } else {
-      query = query.or(
-        `sender_id.eq.${userId},receiver_id.eq.${userId}`,
-      );
+      query = query.or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
     }
 
     const { data: messages, error } = await query.order("created_at", {
       ascending: true,
     });
-    
+
     if (error) {
       console.error("Supabase messages query error:", error);
       throw error;
@@ -166,10 +164,11 @@ exports.getMessages = async (req, res) => {
 
     // Get all attachments at once
     const messageIds = messages.map((m) => m.id);
-    const { data: allAttachments, error: attachmentsError } = await supabaseAdmin
-      .from("message_attachments")
-      .select("id, message_id, file_name, file_path, file_size, file_type")
-      .in("message_id", messageIds);
+    const { data: allAttachments, error: attachmentsError } =
+      await supabaseAdmin
+        .from("message_attachments")
+        .select("id, message_id, file_name, file_path, file_size, file_type")
+        .in("message_id", messageIds);
 
     if (attachmentsError) {
       console.error("Supabase attachments query error:", attachmentsError);
@@ -201,7 +200,9 @@ exports.getMessages = async (req, res) => {
     res.json(enrichedMessages);
   } catch (error) {
     console.error("Get messages error:", error);
-    res.status(500).json({ error: error.message || "Failed to fetch messages" });
+    res
+      .status(500)
+      .json({ error: error.message || "Failed to fetch messages" });
   }
 };
 
