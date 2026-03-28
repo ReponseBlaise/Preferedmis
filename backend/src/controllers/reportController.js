@@ -25,13 +25,9 @@ exports.exportPayrollExcel = async (req, res) => {
     );
     res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
-    // Handle write errors
-    workbook.xlsx.write(res).catch((err) => {
-      console.error("Workbook write error:", err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to write excel file" });
-      }
-    });
+    // Write workbook directly to response
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     console.error("Export payroll excel error:", error.message, error.stack);
     if (!res.headersSent) {
@@ -98,13 +94,9 @@ exports.exportInventoryExcel = async (req, res) => {
     );
     res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
-    // Handle write errors
-    workbook.xlsx.write(res).catch((err) => {
-      console.error("Workbook write error:", err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to write excel file" });
-      }
-    });
+    // Write workbook directly to response
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     console.error("Export inventory excel error:", error.message, error.stack);
     if (!res.headersSent) {

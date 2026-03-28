@@ -142,15 +142,27 @@ exports.getMessages = async (req, res) => {
     // Get unique user IDs
     const userIds = new Set();
     messages.forEach((msg) => {
-      userIds.add(msg.sender_id);
-      userIds.add(msg.receiver_id);
+      if (msg.sender_id) userIds.add(msg.sender_id);
+      if (msg.receiver_id) userIds.add(msg.receiver_id);
     });
 
     // Fetch all users at once
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from("users")
-      .select("id, full_name, email, role")
-      .in("id", Array.from(userIds));
+    const userIdArray = Array.from(userIds);
+    let users = [];
+    
+    if (userIdArray.length > 0) {
+      const { data: usersData, error: usersError } = await supabaseAdmin
+        .from("users")
+        .select("id, full_name, email, role")
+        .in("id", userIdArray);
+
+      if (usersError) {
+        console.error("Supabase users query error:", usersError);
+        throw usersError;
+      }
+      
+      users = usersData || [];
+    }
 
     if (usersError) {
       console.error("Supabase users query error:", usersError);
@@ -164,15 +176,21 @@ exports.getMessages = async (req, res) => {
 
     // Get all attachments at once
     const messageIds = messages.map((m) => m.id);
-    const { data: allAttachments, error: attachmentsError } =
-      await supabaseAdmin
-        .from("message_attachments")
-        .select("id, message_id, file_name, file_path, file_size, file_type")
-        .in("message_id", messageIds);
+    let allAttachments = [];
+    
+    if (messageIds.length > 0) {
+      const { data: attachmentsData, error: attachmentsError } =
+        await supabaseAdmin
+          .from("message_attachments")
+          .select("id, message_id, file_name, file_path, file_size, file_type")
+          .in("message_id", messageIds);
 
-    if (attachmentsError) {
-      console.error("Supabase attachments query error:", attachmentsError);
-      throw attachmentsError;
+      if (attachmentsError) {
+        console.error("Supabase attachments query error:", attachmentsError);
+        throw attachmentsError;
+      }
+      
+      allAttachments = attachmentsData || [];
     }
 
     const attachmentMap = {};
