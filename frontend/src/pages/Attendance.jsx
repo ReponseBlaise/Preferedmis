@@ -60,7 +60,7 @@ const Attendance = () => {
       setWorkers(dailyWorkers);
       const init = {};
       dailyWorkers.forEach((w) => {
-        init[w.id] = { present: true, days: 1.0, comment: "" };
+        init[w.id] = { present: true, days: 1.0 };
       });
       setAttendance(init);
     } catch {
@@ -131,7 +131,6 @@ const Attendance = () => {
       updated[w.id] = {
         present: true,
         days: 1.0,
-        comment: attendance[w.id]?.comment || "",
       };
     });
     setAttendance(updated);
@@ -143,7 +142,6 @@ const Attendance = () => {
       updated[w.id] = {
         present: false,
         days: 0,
-        comment: attendance[w.id]?.comment || "",
       };
     });
     setAttendance(updated);
@@ -156,7 +154,6 @@ const Attendance = () => {
       const rec = existingRecords[w.id];
       init[w.id] = {
         days: rec ? parseFloat(rec.days_worked) : 0,
-        comment: rec ? rec.comment || "" : "",
         present: rec ? parseFloat(rec.days_worked) > 0 : false,
       };
     });
@@ -234,7 +231,6 @@ const Attendance = () => {
       project_id: selectedProject,
       attendance_date: selectedDate,
       days_worked: data.present ? data.days : 0,
-      comment: data.comment || "",
     }));
 
     const presentRecords = records.filter((r) => r.days_worked > 0);
@@ -384,8 +380,7 @@ const Attendance = () => {
                 <th className="text-left px-3 py-2">Position</th>
                 <th className="text-left px-3 py-2">Rate/Day</th>
                 <th className="text-center px-3 py-2">Status</th>
-                <th className="text-center px-3 py-2">Days</th>
-                <th className="text-left px-3 py-2 rounded-tr-lg">Comment</th>
+                <th className="text-center px-3 py-2 rounded-tr-lg">Days</th>
               </tr>
             </thead>
             <tbody>
@@ -404,11 +399,7 @@ const Attendance = () => {
                   : alreadyRecorded
                     ? parseFloat(rec?.days_worked ?? 0)
                     : (attendance[worker.id]?.days ?? 1.0);
-                const comment = editMode
-                  ? (ed?.comment ?? "")
-                  : alreadyRecorded
-                    ? (rec?.comment ?? "")
-                    : (attendance[worker.id]?.comment ?? "");
+
                 const locked = !editMode && (alreadyRecorded || isFutureDate);
 
                 return (
@@ -469,33 +460,6 @@ const Attendance = () => {
                           </button>
                         ))}
                       </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="text"
-                        placeholder="e.g. sick, half day..."
-                        value={comment}
-                        onChange={(e) => {
-                          if (editMode)
-                            setEditData((prev) => ({
-                              ...prev,
-                              [worker.id]: {
-                                ...prev[worker.id],
-                                comment: e.target.value,
-                              },
-                            }));
-                          else if (!locked)
-                            setAttendance((prev) => ({
-                              ...prev,
-                              [worker.id]: {
-                                ...prev[worker.id],
-                                comment: e.target.value,
-                              },
-                            }));
-                        }}
-                        disabled={locked}
-                        className="input-field text-xs w-full disabled:opacity-60"
-                      />
                     </td>
                   </tr>
                 );
