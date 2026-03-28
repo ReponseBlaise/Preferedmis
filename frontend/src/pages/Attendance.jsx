@@ -249,53 +249,6 @@ const Attendance = () => {
     }
   };
 
-  const fetchPayrollReport = async () => {
-    try {
-      const data = await api.getPayrollReport({
-        project_id: selectedProject,
-        ...dateRange,
-      });
-      setPayrollData(data);
-    } catch {
-      toast.error("Failed to generate payroll report");
-    }
-  };
-
-  const exportPayroll = async (fmt) => {
-    try {
-      const response =
-        fmt === "excel"
-          ? await api.exportPayrollExcel({
-              project_id: selectedProject,
-              ...dateRange,
-            })
-          : await api.exportPayrollPDF({
-              project_id: selectedProject,
-              ...dateRange,
-            });
-      const blob = new Blob([response.data], {
-        type:
-          fmt === "excel"
-            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            : "application/pdf",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `payroll_${dateRange.start_date}_${dateRange.end_date}.${fmt === "excel" ? "xlsx" : "pdf"}`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success("Report exported");
-    } catch {
-      toast.error("Failed to export report");
-    }
-  };
-
   const presentCount = Object.values(attendance).filter(
     (a) => a.present,
   ).length;
