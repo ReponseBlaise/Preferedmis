@@ -55,7 +55,7 @@ const Messages = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const data = await api.messages.getUnreadCount();
+      const data = await api.getUnreadNotifications();
       setUnreadCount(data.count || 0);
     } catch (error) {
       console.error('Failed to fetch unread count');
@@ -68,7 +68,7 @@ const Messages = () => {
       const params = { type: activeTab };
       if (filterPriority !== 'all') params.priority = filterPriority;
 
-      const data = await api.messages.getAll(params);
+      const data = await api.getMessages(params);
       setMessages(data || []);
 
       // Load replies for each message
@@ -76,7 +76,7 @@ const Messages = () => {
       for (const msg of data || []) {
         if (msg.id) {
           try {
-            const repliesData = await api.messages.getAll({ parent_id: msg.id });
+            const repliesData = await api.getMessages({ parent_id: msg.id });
             replies[msg.id] = repliesData || [];
           } catch (e) {
             replies[msg.id] = [];
@@ -186,7 +186,7 @@ const Messages = () => {
     }
 
     try {
-      await api.messages.edit(messageId, { message: editText });
+      await api.editMessage(messageId, { message: editText });
       toast.success(t('messageEdited') || 'Message edited successfully');
       setEditingMessage(null);
       fetchMessages();
@@ -201,7 +201,7 @@ const Messages = () => {
     }
 
     try {
-      await api.messages.delete(messageId);
+      await api.deleteMessage(messageId);
       toast.success(t('messageDeleted') || 'Message deleted successfully');
       setSelectedMessage(null);
       fetchMessages();
@@ -212,7 +212,7 @@ const Messages = () => {
 
   const handleMarkAsRead = async (messageId) => {
     try {
-      await api.messages.markAsRead(messageId);
+      await api.markMessageAsRead(messageId);
       fetchMessages();
       fetchUnreadCount();
     } catch (error) {
@@ -222,12 +222,14 @@ const Messages = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.messages.markAllAsRead();
+      setSelectedMessage(null);
       toast.success(t('allMarkedAsRead') || 'All messages marked as read');
       fetchMessages();
       fetchUnreadCount();
     } catch (error) {
       toast.error(t('failedToMarkAsRead') || 'Failed to mark messages as read');
+    }
+  };
     }
   };
 

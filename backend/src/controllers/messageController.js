@@ -164,11 +164,6 @@ exports.getMessages = async (req, res) => {
       users = usersData || [];
     }
 
-    if (usersError) {
-      console.error("Supabase users query error:", usersError);
-      throw usersError;
-    }
-
     const userMap = {};
     (users || []).forEach((user) => {
       userMap[user.id] = user;
