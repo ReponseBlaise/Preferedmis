@@ -1,0 +1,9 @@
+q.zip
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+node_modules/
+.env
+.env.local
