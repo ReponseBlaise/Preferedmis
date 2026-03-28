@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Users, FolderKanban, Package, Calendar, Loader } from 'lucide-react';
-import { workerAPI, projectAPI, inventoryAPI, attendanceAPI } from '../../services/api';
+import api from '../../services/api';
 
 const SECTIONS = [
   { key: 'workers',   label: 'Workers',   icon: Users,        path: '/workers',    color: 'text-blue-600' },
@@ -55,12 +55,12 @@ const GlobalSearch = () => {
     setOpen(true);
     try {
       const [workers, projects, inventory] = await Promise.allSettled([
-        workerAPI.getAll({ search: q }),
-        projectAPI.getAll({ search: q }),
-        inventoryAPI.getAll({ search: q }),
+        api.getWorkers({ search: q }),
+        api.getProjects({ search: q }),
+        api.getInventoryItems({ search: q }),
       ]);
 
-      const get = (res) => res.status === 'fulfilled' ? (res.value.data || []) : [];
+      const get = (res) => res.status === 'fulfilled' ? (res.value || []) : [];
 
       setResults({
         workers:   get(workers),
