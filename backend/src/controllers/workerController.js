@@ -117,6 +117,12 @@ exports.getWorker = async (req, res) => {
 exports.updateWorker = async (req, res) => {
   try {
     const { full_name, phone, position, rate_per_day, payment_type, monthly_salary, start_date, end_date, is_active } = req.body;
+    const workerId = req.params.id;
+
+    if (!workerId) {
+      return res.status(400).json({ error: 'Worker ID is required' });
+    }
+
     const updates = {};
 
     if (full_name !== undefined) updates.full_name = full_name;
@@ -129,14 +135,23 @@ exports.updateWorker = async (req, res) => {
     if (end_date !== undefined) updates.end_date = end_date;
     if (is_active !== undefined) updates.is_active = is_active;
 
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    console.log('Updating worker:', workerId, 'with:', updates);
+
     const { data, error } = await supabaseAdmin
       .from('workers')
       .update(updates)
-      .eq('id', req.params.id)
+      .eq('id', workerId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
 
     if (!data) {
       return res.status(404).json({ error: 'Worker not found' });
@@ -144,7 +159,8 @@ exports.updateWorker = async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update worker' });
+    console.error('Update worker error:', error.message, error);
+    res.status(500).json({ error: error.message || 'Failed to update worker' });
   }
 };
 

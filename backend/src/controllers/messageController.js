@@ -107,25 +107,35 @@ exports.sendMessage = async (req, res) => {
 exports.getMessages = async (req, res) => {
   try {
     const { project_id, type, parent_id } = req.query;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     let query = supabaseAdmin.from("messages").select("*");
 
     if (project_id) query = query.eq("project_id", project_id);
     if (parent_id) {
       query = query.eq("parent_id", parent_id);
     } else if (type === "sent") {
-      query = query.eq("sender_id", req.user.id);
+      query = query.eq("sender_id", userId);
     } else if (type === "received") {
-      query = query.eq("receiver_id", req.user.id);
+      query = query.eq("receiver_id", userId);
     } else {
       query = query.or(
-        `sender_id.eq.${req.user.id},receiver_id.eq.${req.user.id}`,
+        `sender_id.eq.${userId},receiver_id.eq.${userId}`,
       );
     }
 
     const { data: messages, error } = await query.order("created_at", {
       ascending: true,
     });
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Supabase messages query error:", error);
+      throw error;
+    }
 
     if (!messages || messages.length === 0) {
       return res.json([]);
@@ -139,10 +149,15 @@ exports.getMessages = async (req, res) => {
     });
 
     // Fetch all users at once
-    const { data: users } = await supabaseAdmin
+    const { data: users, error: usersError } = await supabaseAdmin
       .from("users")
       .select("id, full_name, email, role")
       .in("id", Array.from(userIds));
+
+    if (usersError) {
+      console.error("Supabase users query error:", usersError);
+      throw usersError;
+    }
 
     const userMap = {};
     (users || []).forEach((user) => {
@@ -151,10 +166,15 @@ exports.getMessages = async (req, res) => {
 
     // Get all attachments at once
     const messageIds = messages.map((m) => m.id);
-    const { data: allAttachments } = await supabaseAdmin
+    const { data: allAttachments, error: attachmentsError } = await supabaseAdmin
       .from("message_attachments")
       .select("id, message_id, file_name, file_path, file_size, file_type")
       .in("message_id", messageIds);
+
+    if (attachmentsError) {
+      console.error("Supabase attachments query error:", attachmentsError);
+      throw attachmentsError;
+    }
 
     const attachmentMap = {};
     (allAttachments || []).forEach((att) => {
@@ -181,7 +201,7 @@ exports.getMessages = async (req, res) => {
     res.json(enrichedMessages);
   } catch (error) {
     console.error("Get messages error:", error);
-    res.status(500).json({ error: "Failed to fetch messages" });
+    res.status(500).json({ error: error.message || "Failed to fetch messages" });
   }
 };
 
