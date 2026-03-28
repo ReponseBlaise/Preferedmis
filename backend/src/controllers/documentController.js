@@ -54,11 +54,16 @@ exports.uploadDocument = async (req, res) => {
 exports.getDocuments = async (req, res) => {
   try {
     const { category, visibility, search } = req.query;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     let query = supabaseAdmin
       .from("documents")
       .select("*")
-      .eq("uploaded_by", req.user.id);
+      .eq("uploaded_by", userId);
 
     if (category) query = query.eq("category", category);
     if (visibility) query = query.eq("visibility", visibility);
@@ -68,12 +73,15 @@ exports.getDocuments = async (req, res) => {
 
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase documents query error:", error);
+      throw error;
+    }
 
     res.json(data || []);
   } catch (error) {
-    console.error("Get documents error:", error);
-    res.status(500).json({ error: "Failed to fetch documents" });
+    console.error("Get documents error:", error.message, error);
+    res.status(500).json({ error: error.message || "Failed to fetch documents" });
   }
 };
 

@@ -305,13 +305,16 @@ exports.deleteNotification = async (req, res) => {
  */
 exports.getUnreadCount = async (req, res) => {
   try {
-    const { count, error } = await supabaseAdmin
+    const { data, count, error } = await supabaseAdmin
       .from('notifications')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', req.user.id)
       .eq('is_read', false);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase unread count error:', error);
+      throw error;
+    }
 
     res.json({ count: count || 0 });
   } catch (error) {
