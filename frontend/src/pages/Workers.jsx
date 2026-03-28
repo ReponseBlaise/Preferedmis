@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { workerAPI, projectAPI } from '../services/api';
+import api from '../services/api';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, Users, DollarSign, Calendar } from 'lucide-react';
@@ -50,10 +50,10 @@ const Workers = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await projectAPI.getAll();
-      setProjects(response.data || []);
-      if (response.data && response.data.length > 0) {
-        setSelectedProject(response.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data || []);
+      if (data && data.length > 0) {
+        setSelectedProject(data[0].id);
       }
     } catch (error) {
       toast.error('Failed to load projects');
@@ -62,8 +62,8 @@ const Workers = () => {
 
   const fetchWorkers = async () => {
     try {
-      const response = await workerAPI.getAll({ project_id: selectedProject, is_active: filterStatus === 'active' ? true : filterStatus === 'inactive' ? false : undefined });
-      let workersData = response.data || [];
+      const data = await api.getWorkers({ project_id: selectedProject, is_active: filterStatus === 'active' ? true : filterStatus === 'inactive' ? false : undefined });
+      let workersData = data || [];
 
       // Filter by payment type
       if (filterPaymentType !== 'all') {
@@ -94,10 +94,10 @@ const Workers = () => {
       };
 
       if (editingWorker) {
-        await workerAPI.update(editingWorker.id, submitData);
+        await api.updateWorker(editingWorker.id, submitData);
         toast.success('Worker updated successfully');
       } else {
-        await workerAPI.create(submitData);
+        await api.createWorker(submitData);
         toast.success('Worker created successfully');
       }
       setShowModal(false);
@@ -127,7 +127,7 @@ const Workers = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this worker?')) {
       try {
-        await workerAPI.delete(id);
+        await api.deleteWorker(id);
         toast.success('Worker deleted successfully');
         fetchWorkers();
       } catch (error) {

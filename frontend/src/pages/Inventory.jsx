@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { inventoryAPI, projectAPI, reportAPI, stockMovementAPI } from '../services/api';
+import api from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit, Trash2, Download, TrendingUp, TrendingDown, History, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
@@ -42,16 +42,16 @@ const Inventory = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await projectAPI.getAll();
-      setProjects(res.data);
-      if (res.data.length > 0) setSelectedProject(res.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data);
+      if (data.length > 0) setSelectedProject(data[0].id);
     } catch { toast.error('Failed to load projects'); }
   };
 
   const fetchItems = async () => {
     try {
-      const res = await inventoryAPI.getAll({ project_id: selectedProject });
-      setItems(res.data);
+      const data = await api.getInventoryItems({ project_id: selectedProject });
+      setItems(data);
     } catch { toast.error('Failed to load inventory'); }
   };
 
@@ -60,8 +60,8 @@ const Inventory = () => {
     setShowHistoryPanel(true);
     setLoadingMovements(true);
     try {
-      const res = await stockMovementAPI.getByItem(item.id);
-      setMovements(res.data || []);
+      const data = await api.getStockMovements(item.id);
+      setMovements(data || []);
     } catch { toast.error('Failed to load history'); }
     setLoadingMovements(false);
   };
@@ -70,10 +70,10 @@ const Inventory = () => {
     e.preventDefault();
     try {
       if (editingItem) {
-        await inventoryAPI.update(editingItem.id, formData);
+        await api.updateInventoryItem(editingItem.id, formData);
         toast.success('Item updated');
       } else {
-        await inventoryAPI.create({ ...formData, project_id: selectedProject });
+        await api.createInventoryItem({ ...formData, project_id: selectedProject });
         toast.success('Item added');
       }
       setShowModal(false);
@@ -96,7 +96,7 @@ const Inventory = () => {
       }
     }
     try {
-      await stockMovementAPI.record({
+      await api.recordStockMovement({
         ...movementForm,
         inventory_item_id: selectedItem.id,
         project_id: selectedProject
@@ -113,7 +113,7 @@ const Inventory = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this item?')) return;
     try {
-      await inventoryAPI.delete(id);
+      await api.deleteInventoryItem(id);
       toast.success('Item deleted');
       fetchItems();
     } catch { toast.error('Failed to delete'); }
@@ -121,8 +121,8 @@ const Inventory = () => {
 
   const exportInventory = async () => {
     try {
-      const response = await reportAPI.exportInventoryExcel({ project_id: selectedProject });
-      const blob = new Blob([response.data], {
+      const response = await api.exportInventoryExcel({ project_id: selectedProject });
+      const blob = new Blob([response], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
       const url = window.URL.createObjectURL(blob);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, UserCheck, UserX, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api, { projectAPI } from '../services/api';
+import api from '../services/api';
 
 const Users = () => {
   const { t } = useTranslation();
@@ -30,8 +30,8 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/auth/users');
-      setUsers(response.data || []);
+      const data = await api.getUsers();
+      setUsers(data || []);
     } catch (error) {
       toast.error('Failed to fetch users');
     } finally {
@@ -41,8 +41,8 @@ const Users = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await projectAPI.getAll();
-      setProjects(res.data || []);
+      const data = await api.getProjects();
+      setProjects(data || []);
     } catch (error) {
       console.error('Failed to fetch projects');
     }

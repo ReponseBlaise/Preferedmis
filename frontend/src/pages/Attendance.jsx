@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { attendanceAPI, workerAPI, projectAPI, reportAPI } from '../services/api';
+import api from '../services/api';
 import { useTranslation } from 'react-i18next';
 import { Check, X, FileSpreadsheet, FileText, CheckSquare, Square, AlertCircle, Edit2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -34,16 +34,16 @@ const Attendance = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await projectAPI.getAll();
-      setProjects(response.data);
-      if (response.data.length > 0) setSelectedProject(response.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data);
+      if (data.length > 0) setSelectedProject(data[0].id);
     } catch { toast.error('Failed to load projects'); }
   };
 
   const fetchWorkers = async () => {
     try {
-      const response = await workerAPI.getAll({ project_id: selectedProject, is_active: true });
-      const dailyWorkers = (response.data || []).filter(w => w.payment_type === 'daily');
+      const data = await api.getWorkers({ project_id: selectedProject, is_active: true });
+      const dailyWorkers = (data || []).filter(w => w.payment_type === 'daily');
       setWorkers(dailyWorkers);
       const init = {};
       dailyWorkers.forEach(w => { init[w.id] = { present: true, days: 1.0, comment: '' }; });
@@ -53,8 +53,8 @@ const Attendance = () => {
 
   const checkExisting = async () => {
     try {
-      const response = await attendanceAPI.getAll({ project_id: selectedProject, start_date: selectedDate, end_date: selectedDate });
-      const records = response.data || [];
+      const data = await api.getAttendance({ project_id: selectedProject, start_date: selectedDate, end_date: selectedDate });
+      const records = data || [];
       const recordMap = {};
       records.forEach(r => { recordMap[r.worker_id] = r; });
       setExistingRecords(recordMap);
@@ -127,7 +127,7 @@ const Attendance = () => {
         const existing = existingRecords[workerId];
         if (existing) {
           // Update existing record
-          updates.push(attendanceAPI.update(existing.id, {
+          updates.push(api.updateAttendance(existing.id, {
             days_worked: data.present ? data.days : 0,
             comment: data.comment
           }));
@@ -179,7 +179,7 @@ const Attendance = () => {
 
     setSubmitting(true);
     try {
-      await Promise.all(presentRecords.map(r => attendanceAPI.record(r)));
+      await Promise.all(presentRecords.map(r => api.recordAttendance(r)));
       toast.success(`Attendance saved — ${presentRecords.length} present, ${workers.length - presentRecords.length} absent`);
       setAlreadyRecorded(true);
     } catch { toast.error('Failed to record attendance'); }
@@ -188,16 +188,16 @@ const Attendance = () => {
 
   const fetchPayrollReport = async () => {
     try {
-      const response = await attendanceAPI.getPayroll({ project_id: selectedProject, ...dateRange });
-      setPayrollData(response.data);
+      const data = await api.getPayrollReport({ project_id: selectedProject, ...dateRange });
+      setPayrollData(data);
     } catch { toast.error('Failed to generate payroll report'); }
   };
 
   const exportPayroll = async (fmt) => {
     try {
       const response = fmt === 'excel'
-        ? await reportAPI.exportPayrollExcel({ project_id: selectedProject, ...dateRange })
-        : await reportAPI.exportPayrollPDF({ project_id: selectedProject, ...dateRange });
+        ? await api.exportPayrollExcel({ project_id: selectedProject, ...dateRange })
+        : await api.exportPayrollPDF({ project_id: selectedProject, ...dateRange });
       const blob = new Blob([response.data], {
         type: fmt === 'excel'
           ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

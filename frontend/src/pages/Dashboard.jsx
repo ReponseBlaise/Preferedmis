@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dashboardAPI, projectAPI, workerAPI } from '../services/api';
+import api from '../services/api';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Users, Calendar, DollarSign, FolderKanban, MessageSquare, TrendingUp, UserCheck, UserX, Clock } from 'lucide-react';
@@ -19,15 +19,15 @@ const Dashboard = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await projectAPI.getAll();
-      setProjects(res.data || []);
+      const data = await api.getProjects();
+      setProjects(data || []);
     } catch {}
   };
 
   const fetchDashboardData = async () => {
     try {
-      const response = await dashboardAPI.getData(selectedProject ? { project_id: selectedProject } : {});
-      setData(response.data);
+      const data = await api.getDashboard(selectedProject ? { project_id: selectedProject } : {});
+      setData(data);
     } catch {
       toast.error('Failed to load dashboard data');
     } finally {
@@ -37,8 +37,8 @@ const Dashboard = () => {
 
   const fetchWorkerStats = async () => {
     try {
-      const res = await workerAPI.getAll({ project_id: selectedProject });
-      const workers = res.data || [];
+      const workers = await api.getWorkers({ project_id: selectedProject });
+      const data = workers || [];
       setWorkerStats({
         total: workers.length,
         daily: workers.filter(w => w.payment_type === 'daily').length,

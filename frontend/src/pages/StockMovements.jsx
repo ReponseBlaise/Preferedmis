@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { stockMovementAPI, projectAPI, inventoryAPI } from '../services/api';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Plus, TrendingUp, TrendingDown, Package, X } from 'lucide-react';
 
@@ -42,8 +42,8 @@ const StockMovements = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await inventoryAPI.getAll(selectedProject ? { project_id: selectedProject } : {});
-      setItems(res.data || []);
+      const data = await api.getInventoryItems(selectedProject ? { project_id: selectedProject } : {});
+      setItems(data || []);
     } catch (error) {
       toast.error('Failed to load inventory items');
     }
@@ -51,9 +51,9 @@ const StockMovements = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await projectAPI.getAll();
-      setProjects(res.data || []);
-      if (res.data && res.data.length > 0) setSelectedProject(res.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data || []);
+      if (data && data.length > 0) setSelectedProject(data[0].id);
     } catch (error) {
       console.error('Failed to fetch projects');
     }
@@ -62,8 +62,8 @@ const StockMovements = () => {
   const fetchMovements = async () => {
     if (!selectedItem) return;
     try {
-      const res = await stockMovementAPI.getByItem(selectedItem.id);
-      setMovements(res.data || []);
+      const data = await api.getStockMovements(selectedItem.id);
+      setMovements(data || []);
     } catch (error) {
       console.error('Failed to fetch movements');
     }
@@ -72,8 +72,8 @@ const StockMovements = () => {
   const fetchSummary = async () => {
     if (!selectedItem) return;
     try {
-      const res = await stockMovementAPI.getSummary(selectedItem.id);
-      setSummary(res.data);
+      const data = await api.getStockSummary(selectedItem.id);
+      setSummary(data);
     } catch (error) {
       console.error('Failed to fetch summary');
     }
@@ -83,12 +83,12 @@ const StockMovements = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await stockMovementAPI.record(form);
+      await api.recordStockMovement(form);
       toast.success(`Stock ${form.movement_type === 'in' ? 'received' : 'issued'} successfully`);
       setShowModal(false);
       resetForm();
-      const res = await inventoryAPI.getAll(selectedProject ? { project_id: selectedProject } : {});
-      setItems(res.data || []);
+      const data = await api.getInventoryItems(selectedProject ? { project_id: selectedProject } : {});
+      setItems(data || []);
       if (selectedItem) {
         fetchMovements();
         fetchSummary();
