@@ -149,7 +149,7 @@ exports.getMessages = async (req, res) => {
     // Fetch all users at once
     const userIdArray = Array.from(userIds);
     let users = [];
-    
+
     if (userIdArray.length > 0) {
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
@@ -160,7 +160,7 @@ exports.getMessages = async (req, res) => {
         console.error("Supabase users query error:", usersError);
         throw usersError;
       }
-      
+
       users = usersData || [];
     }
 
@@ -177,7 +177,7 @@ exports.getMessages = async (req, res) => {
     // Get all attachments at once
     const messageIds = messages.map((m) => m.id);
     let allAttachments = [];
-    
+
     if (messageIds.length > 0) {
       const { data: attachmentsData, error: attachmentsError } =
         await supabaseAdmin
@@ -189,7 +189,7 @@ exports.getMessages = async (req, res) => {
         console.error("Supabase attachments query error:", attachmentsError);
         throw attachmentsError;
       }
-      
+
       allAttachments = attachmentsData || [];
     }
 

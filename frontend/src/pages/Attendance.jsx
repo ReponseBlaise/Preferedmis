@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import { useTranslation } from "react-i18next";
-import {
-  Check,
-  X,
-  AlertCircle,
-  Edit2,
-  Save,
-} from "lucide-react";
+import { Check, X, AlertCircle, Edit2, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import { format, isAfter, startOfDay, parseISO } from "date-fns";
 
@@ -567,8 +561,6 @@ const Attendance = () => {
                 : `Submit Attendance — ${presentCount} present, ${workers.length - presentCount} absent`}
             </button>
           )}
-
-
         </div>
       }
     </div>
