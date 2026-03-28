@@ -254,3 +254,49 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
 
   return doc;
 };
+
+exports.getPayrollReportData = async (project_id, start_date, end_date) => {
+  try {
+    // Get workers for the project
+    const { data: workers } = await supabaseAdmin
+      .from('workers')
+      .select('*')
+      .eq('project_id', project_id)
+      .eq('is_active', true);
+
+    // Get attendance records
+    const { data: attendance } = await supabaseAdmin
+      .from('attendance')
+      .select('*')
+      .eq('project_id', project_id)
+      .gte('attendance_date', start_date)
+      .lte('attendance_date', end_date);
+
+    // Calculate payroll for each worker
+    const workersPayroll = (workers || []).map(worker => {
+      const workerAttendance = (attendance || []).filter(a => a.worker_id === worker.id);
+      const total_days_worked = workerAttendance.reduce((sum, a) => sum + parseFloat(a.days_worked || 0), 0);
+      const total_amount = parseFloat(worker.rate_per_day || 0) * total_days_worked;
+
+      return {
+        id: worker.id,
+        full_name: worker.full_name,
+        phone: worker.phone,
+        position: worker.position,
+        rate_per_day: parseFloat(worker.rate_per_day || 0),
+        total_days_worked,
+        total_amount
+      };
+    });
+
+    return {
+      data: {
+        workers: workersPayroll,
+        total_payroll: workersPayroll.reduce((sum, w) => sum + w.total_amount, 0)
+      }
+    };
+  } catch (error) {
+    console.error('Get payroll report data error:', error);
+    throw error;
+  }
+};

@@ -101,22 +101,54 @@ exports.getMessages = async (req, res) => {
     const { data: messages, error } = await query.order('created_at', { ascending: true });
     if (error) throw error;
 
-    const enrichedMessages = await Promise.all((messages || []).map(async (msg) => {
-      const [senderData, receiverData, attachmentsData] = await Promise.all([
-        supabaseAdmin.from('users').select('id, full_name, email, role').eq('id', msg.sender_id).single(),
-        supabaseAdmin.from('users').select('id, full_name, email').eq('id', msg.receiver_id).single(),
-        supabaseAdmin.from('message_attachments').select('id, file_name, file_path, file_size, file_type').eq('message_id', msg.id)
-      ]);
-      return {
-        ...msg,
-        sender: senderData.data,
-        receiver: receiverData.data,
-        attachments: attachmentsData.data || []
-      };
+    if (!messages || messages.length === 0) {
+      return res.json([]);
+    }
+
+    // Get unique user IDs
+    const userIds = new Set();
+    messages.forEach(msg => {
+      userIds.add(msg.sender_id);
+      userIds.add(msg.receiver_id);
+    });
+
+    // Fetch all users at once
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name, email, role')
+      .in('id', Array.from(userIds));
+
+    const userMap = {};
+    (users || []).forEach(user => {
+      userMap[user.id] = user;
+    });
+
+    // Get all attachments at once
+    const messageIds = messages.map(m => m.id);
+    const { data: allAttachments } = await supabaseAdmin
+      .from('message_attachments')
+      .select('id, message_id, file_name, file_path, file_size, file_type')
+      .in('message_id', messageIds);
+
+    const attachmentMap = {};
+    (allAttachments || []).forEach(att => {
+      if (!attachmentMap[att.message_id]) {
+        attachmentMap[att.message_id] = [];
+      }
+      attachmentMap[att.message_id].push(att);
+    });
+
+    // Enrich messages with cached data
+    const enrichedMessages = messages.map(msg => ({
+      ...msg,
+      sender: userMap[msg.sender_id] || { id: msg.sender_id, full_name: 'Unknown' },
+      receiver: userMap[msg.receiver_id] || { id: msg.receiver_id, full_name: 'Unknown' },
+      attachments: attachmentMap[msg.id] || []
     }));
 
     res.json(enrichedMessages);
   } catch (error) {
+    console.error('Get messages error:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 };
