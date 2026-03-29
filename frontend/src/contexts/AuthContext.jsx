@@ -19,20 +19,20 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      console.log('Attempting login with email:', credentials.email);
+      console.log("Attempting login with email:", credentials.email);
       const data = await api.login(credentials);
-      console.log('Login successful:', data);
+      console.log("Login successful:", data);
       const { token, user } = data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
 
       return user;
     } catch (error) {
-      console.error('Login failed in AuthContext:', error);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
+      console.error("Login failed in AuthContext:", error);
+      console.error("Error status:", error.response?.status);
+      console.error("Error data:", error.response?.data);
       throw error;
     }
   };

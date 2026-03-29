@@ -17,11 +17,9 @@ exports.register = async (req, res) => {
         .json({ error: "Password must be at least 6 characters" });
     }
     if (!["manager", "employee", "storeman"].includes(role)) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid role. Must be manager, employee, or storeman",
-        });
+      return res.status(400).json({
+        error: "Invalid role. Must be manager, employee, or storeman",
+      });
     }
 
     // Check if user exists
@@ -44,11 +42,9 @@ exports.register = async (req, res) => {
         .limit(1);
 
       if (allUsers && allUsers.length > 0) {
-        return res
-          .status(403)
-          .json({
-            error: "Registration is now closed. Contact an administrator.",
-          });
+        return res.status(403).json({
+          error: "Registration is now closed. Contact an administrator.",
+        });
       }
 
       // Public registration only allows manager role for safety
