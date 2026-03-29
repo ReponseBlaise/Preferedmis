@@ -4,7 +4,11 @@ import axios from "axios";
 const getAPIUrl = () => {
   // 1. Use explicit VITE_API_URL if set (development with .env.local)
   if (import.meta.env.VITE_API_URL) {
-    console.log("[API] Using VITE_API_URL:", import.meta.env.VITE_API_URL);
+    console.log(
+      "%c[API] Using VITE_API_URL from .env.local",
+      "color: green; font-weight: bold",
+      import.meta.env.VITE_API_URL,
+    );
     return import.meta.env.VITE_API_URL;
   }
 
@@ -14,32 +18,45 @@ const getAPIUrl = () => {
     window.location.hostname === "127.0.0.1"
   ) {
     const localUrl = "http://localhost:5000/api";
-    console.log("[API] Using local backend:", localUrl);
-    return localUrl;
-  }
-
-  // 3. If on a custom domain with http (not https), try localhost
-  if (window.location.protocol === "http:" && window.location.port) {
-    const localUrl = `http://${window.location.hostname}:5000/api`;
-    console.log("[API] Using local backend via custom domain:", localUrl);
-    return localUrl;
-  }
-
-  // 4. If on HTTPS domain (production), we can't access localhost
-  // In this case, the backend should be on the same domain/port or use Vercel
-  if (window.location.protocol === "https:") {
-    // Try to use the same domain with port 5000 (if exposed) or fall back to Vercel
-    const sameDomainUrl = `https://${window.location.hostname}:5000/api`;
     console.log(
-      "[API] HTTPS detected, trying same domain with port 5000:",
-      sameDomainUrl,
+      "%c[API] Using local backend (localhost detected)",
+      "color: green; font-weight: bold",
+      localUrl,
     );
-    // We'll try this but fall back if it fails
+    return localUrl;
   }
 
-  // 5. Default to Vercel production backend
+  // 3. If on HTTPS domain (production deployment), must use internet-accessible backend
+  if (window.location.protocol === "https:") {
+    console.warn(
+      "%c[API] WARNING: You're on HTTPS domain",
+      "color: orange; font-weight: bold",
+    );
+    console.warn(
+      "%c→ Local backend (port 5000) is NOT accessible from the internet",
+      "color: orange",
+    );
+    console.warn(
+      "%c→ For local development, use: http://localhost:5173",
+      "color: orange",
+    );
+    console.warn(
+      "%c→ Or set VITE_API_URL in .env.local to your exposed backend URL",
+      "color: orange",
+    );
+    console.warn(
+      "%c→ Falling back to Vercel production backend",
+      "color: orange",
+    );
+  }
+
+  // 4. Default to Vercel production backend
   const vercelUrl = "https://preferedmisbackend.vercel.app/api";
-  console.log("[API] Using Vercel production backend:", vercelUrl);
+  console.log(
+    "%c[API] Using Vercel production backend",
+    "color: #ff6b6b; font-weight: bold",
+    vercelUrl,
+  );
   return vercelUrl;
 };
 
