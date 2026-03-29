@@ -72,12 +72,12 @@ const SchedulingCalendar = () => {
       const monthStart = new Date(
         currentDate.getFullYear(),
         currentDate.getMonth(),
-        1
+        1,
       );
       const monthEnd = new Date(
         currentDate.getFullYear(),
         currentDate.getMonth() + 1,
-        0
+        0,
       );
 
       const data = await api.getSchedules({
@@ -163,7 +163,7 @@ const SchedulingCalendar = () => {
     const dateStr = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      day
+      day,
     )
       .toISOString()
       .split("T")[0];
@@ -172,13 +172,13 @@ const SchedulingCalendar = () => {
 
   const previousMonth = () => {
     setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1),
     );
   };
 
   const nextMonth = () => {
     setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1),
     );
   };
 
@@ -248,7 +248,7 @@ const SchedulingCalendar = () => {
                     >
                       {day}
                     </th>
-                  )
+                  ),
                 )}
               </tr>
             </thead>
@@ -276,7 +276,7 @@ const SchedulingCalendar = () => {
                                   <div className="font-medium text-primary-800 truncate">
                                     {
                                       workers.find(
-                                        (w) => w.id === schedule.worker_id
+                                        (w) => w.id === schedule.worker_id,
                                       )?.full_name
                                     }
                                   </div>
@@ -293,7 +293,7 @@ const SchedulingCalendar = () => {
                                       schedule_date: new Date(
                                         currentDate.getFullYear(),
                                         currentDate.getMonth(),
-                                        day
+                                        day,
                                       )
                                         .toISOString()
                                         .split("T")[0],
@@ -311,7 +311,7 @@ const SchedulingCalendar = () => {
                       );
                     })}
                   </tr>
-                )
+                ),
               )}
             </tbody>
           </table>

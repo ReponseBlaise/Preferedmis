@@ -444,17 +444,27 @@ router.post(
   getUserProjects,
   authorize("manager", "employee"),
   auditLog("CREATE", "milestones"),
-  milestoneController.createMilestone
+  milestoneController.createMilestone,
 );
-router.get("/milestones", auth, getUserProjects, milestoneController.getMilestones);
-router.get("/milestones/summary", auth, getUserProjects, milestoneController.getMilestoneSummary);
+router.get(
+  "/milestones",
+  auth,
+  getUserProjects,
+  milestoneController.getMilestones,
+);
+router.get(
+  "/milestones/summary",
+  auth,
+  getUserProjects,
+  milestoneController.getMilestoneSummary,
+);
 router.put(
   "/milestones/:id",
   auth,
   getUserProjects,
   authorize("manager", "employee"),
   auditLog("UPDATE", "milestones"),
-  milestoneController.updateMilestone
+  milestoneController.updateMilestone,
 );
 router.delete(
   "/milestones/:id",
@@ -462,7 +472,7 @@ router.delete(
   getUserProjects,
   authorize("manager"),
   auditLog("DELETE", "milestones"),
-  milestoneController.deleteMilestone
+  milestoneController.deleteMilestone,
 );
 
 // Worker Scheduling routes
@@ -472,18 +482,32 @@ router.post(
   getUserProjects,
   authorize("manager", "employee"),
   auditLog("CREATE", "schedules"),
-  scheduleController.createSchedule
+  scheduleController.createSchedule,
 );
-router.get("/schedules", auth, getUserProjects, scheduleController.getSchedules);
-router.get("/schedules/check-conflict", auth, scheduleController.checkScheduleConflict);
-router.get("/schedules/summary", auth, getUserProjects, scheduleController.getWorkerScheduleSummary);
+router.get(
+  "/schedules",
+  auth,
+  getUserProjects,
+  scheduleController.getSchedules,
+);
+router.get(
+  "/schedules/check-conflict",
+  auth,
+  scheduleController.checkScheduleConflict,
+);
+router.get(
+  "/schedules/summary",
+  auth,
+  getUserProjects,
+  scheduleController.getWorkerScheduleSummary,
+);
 router.post(
   "/schedules/bulk",
   auth,
   getUserProjects,
   authorize("manager"),
   auditLog("CREATE", "schedules"),
-  scheduleController.bulkSchedule
+  scheduleController.bulkSchedule,
 );
 router.put(
   "/schedules/:id",
@@ -491,7 +515,7 @@ router.put(
   getUserProjects,
   authorize("manager", "employee"),
   auditLog("UPDATE", "schedules"),
-  scheduleController.updateSchedule
+  scheduleController.updateSchedule,
 );
 router.delete(
   "/schedules/:id",
@@ -499,7 +523,7 @@ router.delete(
   getUserProjects,
   authorize("manager"),
   auditLog("DELETE", "schedules"),
-  scheduleController.deleteSchedule
+  scheduleController.deleteSchedule,
 );
 
 // Project Budget routes
@@ -509,18 +533,28 @@ router.post(
   getUserProjects,
   authorize("manager"),
   auditLog("CREATE", "budgets"),
-  budgetController.createBudget
+  budgetController.createBudget,
 );
 router.get("/budgets", auth, getUserProjects, budgetController.getBudget);
-router.get("/budgets/summary", auth, getUserProjects, budgetController.getBudgetSummary);
-router.get("/budgets/alerts", auth, getUserProjects, budgetController.getBudgetAlerts);
+router.get(
+  "/budgets/summary",
+  auth,
+  getUserProjects,
+  budgetController.getBudgetSummary,
+);
+router.get(
+  "/budgets/alerts",
+  auth,
+  getUserProjects,
+  budgetController.getBudgetAlerts,
+);
 router.put(
   "/budgets/:project_id",
   auth,
   getUserProjects,
   authorize("manager"),
   auditLog("UPDATE", "budgets"),
-  budgetController.updateBudget
+  budgetController.updateBudget,
 );
 
 // Budget Spending routes
@@ -530,16 +564,21 @@ router.post(
   getUserProjects,
   authorize("manager", "employee", "storeman"),
   auditLog("CREATE", "spending"),
-  budgetController.recordSpending
+  budgetController.recordSpending,
 );
-router.get("/budgets/spending", auth, getUserProjects, budgetController.getSpending);
+router.get(
+  "/budgets/spending",
+  auth,
+  getUserProjects,
+  budgetController.getSpending,
+);
 router.delete(
   "/budgets/spending/:id",
   auth,
   getUserProjects,
   authorize("manager"),
   auditLog("DELETE", "spending"),
-  budgetController.deleteSpending
+  budgetController.deleteSpending,
 );
 
 // Debug endpoint for testing updates

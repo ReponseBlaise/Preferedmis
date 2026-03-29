@@ -243,15 +243,18 @@ export default {
   // Project Milestones
   createMilestone: (d) => extractData(api.post("/milestones", d)),
   getMilestones: (p) => extractData(api.get("/milestones", { params: p })),
-  getMilestoneSummary: (p) => extractData(api.get("/milestones/summary", { params: p })),
+  getMilestoneSummary: (p) =>
+    extractData(api.get("/milestones/summary", { params: p })),
   updateMilestone: (id, d) => extractData(api.put(`/milestones/${id}`, d)),
   deleteMilestone: (id) => extractData(api.delete(`/milestones/${id}`)),
 
   // Worker Scheduling
   createSchedule: (d) => extractData(api.post("/schedules", d)),
   getSchedules: (p) => extractData(api.get("/schedules", { params: p })),
-  checkScheduleConflict: (p) => extractData(api.get("/schedules/check-conflict", { params: p })),
-  getScheduleSummary: (p) => extractData(api.get("/schedules/summary", { params: p })),
+  checkScheduleConflict: (p) =>
+    extractData(api.get("/schedules/check-conflict", { params: p })),
+  getScheduleSummary: (p) =>
+    extractData(api.get("/schedules/summary", { params: p })),
   bulkSchedule: (d) => extractData(api.post("/schedules/bulk", d)),
   updateSchedule: (id, d) => extractData(api.put(`/schedules/${id}`, d)),
   deleteSchedule: (id) => extractData(api.delete(`/schedules/${id}`)),
@@ -259,8 +262,10 @@ export default {
   // Project Budgets
   createBudget: (d) => extractData(api.post("/budgets", d)),
   getBudget: (p) => extractData(api.get("/budgets", { params: p })),
-  getBudgetSummary: (p) => extractData(api.get("/budgets/summary", { params: p })),
-  getBudgetAlerts: (p) => extractData(api.get("/budgets/alerts", { params: p })),
+  getBudgetSummary: (p) =>
+    extractData(api.get("/budgets/summary", { params: p })),
+  getBudgetAlerts: (p) =>
+    extractData(api.get("/budgets/alerts", { params: p })),
   updateBudget: (id, d) => extractData(api.put(`/budgets/${id}`, d)),
   recordSpending: (d) => extractData(api.post("/budgets/spending", d)),
   getSpending: (p) => extractData(api.get("/budgets/spending", { params: p })),

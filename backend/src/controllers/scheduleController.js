@@ -51,20 +51,13 @@ exports.createSchedule = async (req, res) => {
 // Get schedules
 exports.getSchedules = async (req, res) => {
   try {
-    const {
-      project_id,
-      worker_id,
-      start_date,
-      end_date,
-    } = req.query;
+    const { project_id, worker_id, start_date, end_date } = req.query;
 
-    let query = supabaseAdmin
-      .from("worker_schedules")
-      .select(
-        `*,
+    let query = supabaseAdmin.from("worker_schedules").select(
+      `*,
         worker:worker_id(*),
-        project:project_id(*)`
-      );
+        project:project_id(*)`,
+    );
 
     if (project_id) {
       query = query.eq("project_id", project_id);
@@ -145,9 +138,7 @@ exports.getWorkerScheduleSummary = async (req, res) => {
   try {
     const { worker_id, project_id } = req.query;
 
-    let query = supabaseAdmin
-      .from("worker_schedule_summary")
-      .select("*");
+    let query = supabaseAdmin.from("worker_schedule_summary").select("*");
 
     if (worker_id) {
       query = query.eq("worker_id", worker_id);
@@ -201,9 +192,7 @@ exports.bulkSchedule = async (req, res) => {
     const { schedules } = req.body;
 
     if (!Array.isArray(schedules) || schedules.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "Schedules array is required" });
+      return res.status(400).json({ error: "Schedules array is required" });
     }
 
     // Insert all schedules
@@ -217,7 +206,7 @@ exports.bulkSchedule = async (req, res) => {
           hours_assigned: s.hours_assigned || 8,
           notes: s.notes,
           assigned_by: req.user.id,
-        }))
+        })),
       )
       .select();
 

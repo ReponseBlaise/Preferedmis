@@ -178,7 +178,9 @@ const ProjectProgress = () => {
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-3xl font-bold text-gray-800">📈 Project Progress</h2>
+        <h2 className="text-3xl font-bold text-gray-800">
+          📈 Project Progress
+        </h2>
         <button
           onClick={() => setShowModal(true)}
           className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
@@ -268,7 +270,9 @@ const ProjectProgress = () => {
                       <h4 className="font-semibold text-gray-800">
                         {milestone.title}
                       </h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}
+                      >
                         {milestone.status.replace("_", " ")}
                       </span>
                     </div>
@@ -278,7 +282,9 @@ const ProjectProgress = () => {
                       </p>
                     )}
                     <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600">
-                      <span>Due: {new Date(milestone.due_date).toLocaleDateString()}</span>
+                      <span>
+                        Due: {new Date(milestone.due_date).toLocaleDateString()}
+                      </span>
                     </div>
 
                     {/* Progress Bar */}

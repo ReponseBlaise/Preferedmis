@@ -148,17 +148,13 @@ exports.recordSpending = async (req, res) => {
 
     if (!project_id || !category || !amount || !spending_date) {
       return res.status(400).json({
-        error:
-          "Project ID, category, amount, and spending date are required",
+        error: "Project ID, category, amount, and spending date are required",
       });
     }
 
-    if (
-      !["labor", "materials", "equipment", "other"].includes(category)
-    ) {
+    if (!["labor", "materials", "equipment", "other"].includes(category)) {
       return res.status(400).json({
-        error:
-          "Category must be one of: labor, materials, equipment, other",
+        error: "Category must be one of: labor, materials, equipment, other",
       });
     }
 
@@ -189,12 +185,7 @@ exports.recordSpending = async (req, res) => {
 // Get spending records
 exports.getSpending = async (req, res) => {
   try {
-    const {
-      project_id,
-      category,
-      start_date,
-      end_date,
-    } = req.query;
+    const { project_id, category, start_date, end_date } = req.query;
 
     let query = supabaseAdmin.from("budget_spending").select("*");
 
@@ -287,7 +278,10 @@ exports.getBudgetAlerts = async (req, res) => {
     }
 
     // Check category overages
-    if (summary.labor_spent > summary.labor_budget && summary.labor_budget > 0) {
+    if (
+      summary.labor_spent > summary.labor_budget &&
+      summary.labor_budget > 0
+    ) {
       alerts.push({
         type: "category_over",
         severity: "warning",

@@ -367,7 +367,7 @@ const BudgetTracking = () => {
                     style={{
                       width: `${Math.min(
                         (summary.labor_spent / summary.labor_budget) * 100,
-                        100
+                        100,
                       )}%`,
                     }}
                   ></div>
@@ -397,7 +397,7 @@ const BudgetTracking = () => {
                       width: `${Math.min(
                         (summary.materials_spent / summary.materials_budget) *
                           100,
-                        100
+                        100,
                       )}%`,
                     }}
                   ></div>
@@ -427,7 +427,7 @@ const BudgetTracking = () => {
                       width: `${Math.min(
                         (summary.equipment_spent / summary.equipment_budget) *
                           100,
-                        100
+                        100,
                       )}%`,
                     }}
                   ></div>
@@ -469,7 +469,7 @@ const BudgetTracking = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(
-                        record.category
+                        record.category,
                       )}`}
                     >
                       {record.category}
