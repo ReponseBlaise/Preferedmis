@@ -98,6 +98,7 @@ export default {
   exportPayrollExcel: (p) => blob(api.get("/reports/payroll/excel", { params: p, responseType: "blob" })),
   exportPayrollPDF: (p) => blob(api.get("/reports/payroll/pdf", { params: p, responseType: "blob" })),
   exportInventoryExcel: (p) => blob(api.get("/reports/inventory/excel", { params: p, responseType: "blob" })),
+  exportInventoryPDF: (p) => blob(api.get("/reports/inventory/pdf", { params: p, responseType: "blob" })),
   
   testEmail: (e) => extractData(api.post("/notifications/test", { email: e })),
   sendSystemUpdate: (d) => extractData(api.post("/notifications/system-update", d)),

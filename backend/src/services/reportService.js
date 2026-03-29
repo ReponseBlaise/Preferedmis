@@ -351,6 +351,97 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   return doc;
 };
 
+exports.generateInventoryPDF = async (project_id, start_date, end_date) => {
+  const doc = new PDFDocument({ margin: 50, size: "A4" });
+
+  // Header
+  doc
+    .fontSize(20)
+    .fillColor("#1e40af")
+    .text("PREFERRED CONTRACTORS", { align: "center" });
+  doc
+    .fontSize(14)
+    .fillColor("#000000")
+    .text("Inventory Report", { align: "center" });
+  
+  if (start_date && end_date) {
+    doc
+      .fontSize(10)
+      .fillColor("#555555")
+      .text(`Period: ${start_date} to ${end_date}`, { align: "center" });
+  }
+  doc.moveDown(1.5);
+
+  // Fetch data
+  let query = supabaseAdmin
+    .from("inventory_items")
+    .select("*, inventory_categories(name)")
+    .eq("project_id", project_id);
+
+  if (start_date && end_date) {
+    query = query
+      .gte("purchase_date", start_date)
+      .lte("purchase_date", end_date);
+  }
+
+  const { data: items } = await query.order("purchase_date", {
+    ascending: false,
+  });
+
+  // Table header
+  const colX = [50, 200, 310, 370, 450];
+  const tableTop = doc.y;
+
+  doc.rect(50, tableTop, 495, 20).fill("#1e40af");
+  doc.fillColor("#ffffff").fontSize(9).font("Helvetica-Bold");
+  doc.text("Item Name", colX[0], tableTop + 5, { width: 145 });
+  doc.text("Category", colX[1], tableTop + 5, { width: 105 });
+  doc.text("Qty", colX[2], tableTop + 5, { width: 55 });
+  doc.text("Unit Price", colX[3], tableTop + 5, { width: 75 });
+  doc.text("Total (RWF)", colX[4], tableTop + 5, { width: 95 });
+
+  let y = tableTop + 22;
+  let grandTotal = 0;
+  doc.font("Helvetica").fontSize(9).fillColor("#000000");
+
+  (items || []).forEach((item, i) => {
+    if (i % 2 === 0) doc.rect(50, y - 2, 495, 18).fill("#f0f4ff");
+    doc.fillColor("#000000");
+    const itemTotal = parseFloat(item.total_price || 0);
+    grandTotal += itemTotal;
+    
+    doc.text(item.name || "", colX[0], y, { width: 145 });
+    doc.text(item.inventory_categories?.name || "", colX[1], y, { width: 105 });
+    doc.text(item.quantity.toString(), colX[2], y, { width: 55 });
+    doc.text(Number(item.unit_price || 0).toLocaleString(), colX[3], y, {
+      width: 75,
+    });
+    doc.text(itemTotal.toLocaleString(), colX[4], y, { width: 95 });
+    y += 20;
+
+    // Page break
+    if (y > 750) {
+      doc.addPage();
+      y = 50;
+    }
+  });
+
+  // Total row
+  doc.rect(50, y, 495, 22).fill("#e5e7eb");
+  doc.fillColor("#000000").font("Helvetica-Bold").fontSize(10);
+  doc.text("TOTAL INVENTORY VALUE", colX[0], y + 5, { width: 390 });
+  doc.text(`${grandTotal.toLocaleString()} RWF`, colX[4], y + 5, { width: 95 });
+
+  // Footer
+  doc.moveDown(3);
+  doc
+    .fontSize(8)
+    .fillColor("#888888")
+    .text(`Generated on ${new Date().toLocaleString()}`, { align: "right" });
+
+  return doc;
+};
+
 exports.getPayrollReportData = async (project_id, start_date, end_date) => {
   try {
     // Get workers for the project

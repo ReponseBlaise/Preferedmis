@@ -106,3 +106,37 @@ exports.exportInventoryExcel = async (req, res) => {
     }
   }
 };
+
+exports.exportInventoryPDF = async (req, res) => {
+  try {
+    const { project_id, start_date, end_date } = req.query;
+
+    if (!project_id) {
+      return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    const doc = await reportService.generateInventoryPDF(
+      project_id,
+      start_date,
+      end_date,
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=inventory_${Date.now()}.pdf`,
+    );
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+
+    doc.pipe(res);
+    doc.end();
+  } catch (error) {
+    console.error("Export inventory PDF error:", error);
+    if (!res.headersSent) {
+      res
+        .status(500)
+        .json({ error: error.message || "Failed to export inventory" });
+    }
+  }
+};
+

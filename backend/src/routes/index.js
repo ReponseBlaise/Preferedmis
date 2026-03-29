@@ -348,6 +348,11 @@ router.get(
   auth,
   reportController.exportInventoryExcel,
 );
+router.get(
+  "/reports/inventory/pdf",
+  auth,
+  reportController.exportInventoryPDF,
+);
 
 // Audit routes
 router.get(

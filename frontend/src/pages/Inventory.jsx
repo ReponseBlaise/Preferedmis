@@ -162,27 +162,37 @@ const Inventory = () => {
     }
   };
 
-  const exportInventory = async () => {
+  const exportInventory = async (format = "excel") => {
     try {
-      const response = await api.exportInventoryExcel({
-        project_id: selectedProject,
-      });
-      const blob = new Blob([response], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      let response, mimeType, fileName;
+      
+      if (format === "pdf") {
+        response = await api.exportInventoryPDF({
+          project_id: selectedProject,
+        });
+        mimeType = "application/pdf";
+        fileName = `inventory_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      } else {
+        response = await api.exportInventoryExcel({
+          project_id: selectedProject,
+        });
+        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        fileName = `inventory_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      }
+      
+      // Use response.data directly since the API already returns a blob
+      const blob = new Blob([response.data || response], { type: mimeType });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute(
-        "download",
-        `inventory_${format(new Date(), "yyyy-MM-dd")}.xlsx`,
-      );
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("Exported successfully");
-    } catch {
+      toast.success(`Exported to ${format.toUpperCase()} successfully`);
+    } catch (error) {
+      console.error("Export error:", error);
       toast.error("Export failed");
     }
   };
@@ -247,10 +257,18 @@ const Inventory = () => {
           <h2 className="text-3xl font-bold text-gray-800">{t("inventory")}</h2>
           <div className="flex gap-2">
             <button
-              onClick={exportInventory}
+              onClick={() => exportInventory("excel")}
               className="btn-secondary flex items-center gap-2"
+              title="Export as Excel"
             >
-              <Download size={18} /> {t("export")}
+              <Download size={18} /> Excel
+            </button>
+            <button
+              onClick={() => exportInventory("pdf")}
+              className="btn-secondary flex items-center gap-2"
+              title="Export as PDF"
+            >
+              <Download size={18} /> PDF
             </button>
             <button
               onClick={() => setShowModal(true)}

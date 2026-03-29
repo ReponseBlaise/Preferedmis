@@ -142,7 +142,7 @@ const Documents = () => {
   const handleDownload = async (documentId) => {
     try {
       const response = await api.downloadDocument(documentId);
-      const url = window.URL.createObjectURL(new Blob([response]));
+      const url = window.URL.createObjectURL(new Blob([response.data || response]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `document_${documentId}`);

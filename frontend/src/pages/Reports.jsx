@@ -10,8 +10,10 @@ import {
   Users,
   Package,
   DollarSign,
+  Download,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { format } from "date-fns";
 
 const Reports = () => {
   const [projects, setProjects] = useState([]);
@@ -79,6 +81,92 @@ const Reports = () => {
       toast.error("Failed to fetch report data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportPayrollReport = async (fileFormat = "excel") => {
+    if (!selectedProject) {
+      toast.error("Please select a project");
+      return;
+    }
+
+    try {
+      let response, mimeType, fileName;
+
+      if (fileFormat === "pdf") {
+        response = await api.exportPayrollPDF({
+          project_id: selectedProject,
+          start_date: startDate,
+          end_date: endDate,
+        });
+        mimeType = "application/pdf";
+        fileName = `payroll_report_${startDate}_${endDate}.pdf`;
+      } else {
+        response = await api.exportPayrollExcel({
+          project_id: selectedProject,
+          start_date: startDate,
+          end_date: endDate,
+        });
+        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        fileName = `payroll_report_${startDate}_${endDate}.xlsx`;
+      }
+
+      const blob = new Blob([response.data || response], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(`Payroll report exported to ${fileFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export payroll report");
+    }
+  };
+
+  const exportInventoryReport = async (fileFormat = "excel") => {
+    if (!selectedProject) {
+      toast.error("Please select a project");
+      return;
+    }
+
+    try {
+      let response, mimeType, fileName;
+
+      if (fileFormat === "pdf") {
+        response = await api.exportInventoryPDF({
+          project_id: selectedProject,
+          start_date: startDate,
+          end_date: endDate,
+        });
+        mimeType = "application/pdf";
+        fileName = `inventory_report_${startDate}_${endDate}.pdf`;
+      } else {
+        response = await api.exportInventoryExcel({
+          project_id: selectedProject,
+          start_date: startDate,
+          end_date: endDate,
+        });
+        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        fileName = `inventory_report_${startDate}_${endDate}.xlsx`;
+      }
+
+      const blob = new Blob([response.data || response], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(`Inventory report exported to ${fileFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export inventory report");
     }
   };
 
@@ -165,9 +253,27 @@ const Reports = () => {
         {/* Summary Stats */}
         {reportData.attendance && reportData.attendance.length > 0 && (
           <div
-            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-md p-6`}
+            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-md p-6 mb-8`}
           >
-            <h3 className="text-lg font-semibold mb-4">Attendance Summary</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Attendance Summary</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => exportPayrollReport("excel")}
+                  className="btn-secondary flex items-center gap-2 text-sm"
+                  title="Export payroll as Excel"
+                >
+                  <Download size={16} /> Payroll Excel
+                </button>
+                <button
+                  onClick={() => exportPayrollReport("pdf")}
+                  className="btn-secondary flex items-center gap-2 text-sm"
+                  title="Export payroll as PDF"
+                >
+                  <Download size={16} /> Payroll PDF
+                </button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div
                 className={`p-4 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
@@ -191,6 +297,73 @@ const Reports = () => {
                 </p>
                 <p className="text-2xl font-bold">
                   {new Set(reportData.attendance.map((a) => a.worker_id)).size}
+                </p>
+              </div>
+              <div
+                className={`p-4 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
+              >
+                <p
+                  className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Period
+                </p>
+                <p className="text-sm font-semibold">
+                  {startDate} to {endDate}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Inventory Summary */}
+        {reportData.inventory && reportData.inventory.length > 0 && (
+          <div
+            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-md p-6 mb-8`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Inventory Summary</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => exportInventoryReport("excel")}
+                  className="btn-secondary flex items-center gap-2 text-sm"
+                  title="Export inventory as Excel"
+                >
+                  <Download size={16} /> Inventory Excel
+                </button>
+                <button
+                  onClick={() => exportInventoryReport("pdf")}
+                  className="btn-secondary flex items-center gap-2 text-sm"
+                  title="Export inventory as PDF"
+                >
+                  <Download size={16} /> Inventory PDF
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                className={`p-4 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
+              >
+                <p
+                  className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Total Items
+                </p>
+                <p className="text-2xl font-bold">
+                  {reportData.inventory.length}
+                </p>
+              </div>
+              <div
+                className={`p-4 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
+              >
+                <p
+                  className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Total Value (RWF)
+                </p>
+                <p className="text-2xl font-bold">
+                  {(reportData.inventory || [])
+                    .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0)
+                    .toLocaleString()}
                 </p>
               </div>
               <div
