@@ -23,6 +23,8 @@ import {
   Moon,
   Sun,
   File,
+  Target,
+  Wallet,
 } from "lucide-react";
 import NotificationCenter from "../NotificationCenter";
 import GlobalSearch from "../common/GlobalSearch";
@@ -106,6 +108,24 @@ const Layout = () => {
       path: "/projects",
       icon: FolderKanban,
       label: t("projects"),
+      roles: ["manager"],
+    },
+    {
+      path: "/projects/progress",
+      icon: Target,
+      label: "Project Progress",
+      roles: ["manager"],
+    },
+    {
+      path: "/projects/scheduling",
+      icon: Calendar,
+      label: "Worker Scheduling",
+      roles: ["manager"],
+    },
+    {
+      path: "/projects/budgeting",
+      icon: Wallet,
+      label: "Budget Tracking",
       roles: ["manager"],
     },
     {

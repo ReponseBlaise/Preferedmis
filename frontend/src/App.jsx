@@ -18,6 +18,9 @@ import PublicUpdates from "./pages/PublicUpdates";
 import StockMovements from "./pages/StockMovements";
 import Reports from "./pages/Reports";
 import Documents from "./pages/Documents";
+import ProjectProgress from "./pages/ProjectProgress";
+import SchedulingCalendar from "./pages/SchedulingCalendar";
+import BudgetTracking from "./pages/BudgetTracking";
 import "./i18n";
 
 const PrivateRoute = ({ children, roles }) => {
@@ -105,6 +108,30 @@ function App() {
                 element={
                   <PrivateRoute roles={["manager"]}>
                     <Projects />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="projects/progress"
+                element={
+                  <PrivateRoute roles={["manager"]}>
+                    <ProjectProgress />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="projects/scheduling"
+                element={
+                  <PrivateRoute roles={["manager"]}>
+                    <SchedulingCalendar />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="projects/budgeting"
+                element={
+                  <PrivateRoute roles={["manager"]}>
+                    <BudgetTracking />
                   </PrivateRoute>
                 }
               />
