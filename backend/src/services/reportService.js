@@ -22,7 +22,7 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   const worksheet = workbook.addWorksheet("Payroll Report");
 
   // Title block
-  worksheet.mergeCells("A1:F2");
+  worksheet.mergeCells("A1:G2");
   worksheet.getCell("A1").value = "PREFERRED CONTRACTORS";
   worksheet.getCell("A1").font = {
     size: 16,
@@ -34,12 +34,12 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     horizontal: "center",
   };
 
-  worksheet.mergeCells("A3:F3");
+  worksheet.mergeCells("A3:G3");
   worksheet.getCell("A3").value = "PAYROLL REPORT";
   worksheet.getCell("A3").font = { size: 13, bold: true };
   worksheet.getCell("A3").alignment = { horizontal: "center" };
 
-  worksheet.mergeCells("A4:F4");
+  worksheet.mergeCells("A4:G4");
   worksheet.getCell("A4").value = `Period: ${start_date} to ${end_date}`;
   worksheet.getCell("A4").font = { size: 10, italic: true };
   worksheet.getCell("A4").alignment = { horizontal: "center" };
@@ -51,7 +51,8 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     { key: "full_name", width: 25 },
     { key: "phone", width: 15 },
     { key: "position", width: 20 },
-    { key: "rate_per_day", width: 15 },
+    { key: "payment_type", width: 12 },
+    { key: "rate_info", width: 18 },
     { key: "total_days_worked", width: 15 },
     { key: "total_amount", width: 20 },
   ];
@@ -61,8 +62,9 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     "Worker Name",
     "Phone",
     "Position",
-    "Rate/Day (RWF)",
-    "Days Worked",
+    "Type",
+    "Rate/Salary (RWF)",
+    "Days/Months",
     "Total Amount (RWF)",
   ]);
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
@@ -79,17 +81,33 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
     start_date,
     end_date,
   );
+
+  // Use adjusted dates if it's month-end payroll
+  const displayStartDate = payrollData.adjustedStartDate || start_date;
+  const displayEndDate = payrollData.adjustedEndDate || end_date;
+  const payrollType = payrollData.isMonthPayroll ? "(MONTH-END PAYROLL)" : "";
+
+  worksheet.getCell("A4").value = `Period: ${displayStartDate} to ${displayEndDate} ${payrollType}`;
+
   let grandTotal = 0;
 
   (payrollData.workers || []).forEach((w, i) => {
     grandTotal += w.total_amount;
 
+    const rateInfo = w.payment_type === "daily" 
+      ? w.rate_per_day 
+      : w.monthly_salary;
+    const daysInfo = w.payment_type === "daily" 
+      ? w.total_days_worked.toFixed(2) 
+      : (payrollData.isMonthComplete ? "1 Month" : "0 Months");
+
     const row = worksheet.addRow({
       full_name: w.full_name,
       phone: w.phone || "",
       position: w.position || "",
-      rate_per_day: w.rate_per_day,
-      total_days_worked: w.total_days_worked,
+      payment_type: w.payment_type === "daily" ? "Daily" : "Monthly",
+      rate_info: rateInfo,
+      total_days_worked: daysInfo,
       total_amount: w.total_amount,
     });
 
@@ -252,6 +270,18 @@ exports.generateInventoryExcel = async (project_id, start_date, end_date) => {
 exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   const doc = new PDFDocument({ margin: 50, size: "A4" });
 
+  // Fetch payroll data first to get adjusted dates
+  const { data: payrollData } = await exports.getPayrollReportData(
+    project_id,
+    start_date,
+    end_date,
+  );
+
+  // Use adjusted dates if it's month-end payroll
+  const displayStartDate = payrollData.adjustedStartDate || start_date;
+  const displayEndDate = payrollData.adjustedEndDate || end_date;
+  const isMonthPayroll = payrollData.isMonthPayroll;
+
   // Header
   doc
     .fontSize(20)
@@ -264,67 +294,61 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   doc
     .fontSize(10)
     .fillColor("#555555")
-    .text(`Period: ${start_date} to ${end_date}`, { align: "center" });
+    .text(`Period: ${displayStartDate} to ${displayEndDate}${isMonthPayroll ? " (MONTH-END)" : ""}`, { align: "center" });
   doc.moveDown(1.5);
 
-  // Fetch data
-  const { data: workers } = await supabaseAdmin
-    .from("workers")
-    .select("*")
-    .eq("project_id", project_id)
-    .eq("payment_type", "daily");
+  const workers = payrollData.workers || [];
 
-  const { data: attendance } = await supabaseAdmin
-    .from("attendance")
-    .select("*")
-    .eq("project_id", project_id)
-    .gte("attendance_date", start_date)
-    .lte("attendance_date", end_date);
-
-  const rows = (workers || []).map((w) => {
-    const workerAttendance = (attendance || []).filter(
-      (a) => a.worker_id === w.id,
-    );
-    const total_days_worked = workerAttendance.reduce(
-      (sum, a) => sum + parseFloat(a.days_worked || 0),
-      0,
-    );
-    const total_amount = parseFloat(w.rate_per_day || 0) * total_days_worked;
+  const rows = workers.map((w) => {
+    var rateDisplay;
+    var daysDisplay;
+    
+    if (w.payment_type === "daily") {
+      rateDisplay = w.rate_per_day;
+      daysDisplay = w.total_days_worked.toFixed(2);
+    } else {
+      rateDisplay = w.monthly_salary;
+      daysDisplay = isMonthComplete ? "Month" : "0";
+    }
+    
     return {
       full_name: w.full_name,
       position: w.position || "",
-      rate_per_day: w.rate_per_day || 0,
-      total_days_worked,
-      total_amount,
+      type: w.payment_type === "daily" ? "Daily" : "Monthly",
+      rate_or_salary: rateDisplay,
+      days_or_status: daysDisplay,
+      total_amount: w.total_amount,
     };
   });
 
   // Table header
-  const colX = [50, 200, 310, 370, 450];
+  const colX = [50, 170, 270, 340, 410, 480];
   const tableTop = doc.y;
 
   doc.rect(50, tableTop, 495, 20).fill("#1e40af");
-  doc.fillColor("#ffffff").fontSize(9).font("Helvetica-Bold");
-  doc.text("Worker Name", colX[0], tableTop + 5, { width: 145 });
-  doc.text("Position", colX[1], tableTop + 5, { width: 105 });
-  doc.text("Days", colX[2], tableTop + 5, { width: 55 });
-  doc.text("Rate/Day", colX[3], tableTop + 5, { width: 75 });
-  doc.text("Total (RWF)", colX[4], tableTop + 5, { width: 95 });
+  doc.fillColor("#ffffff").fontSize(8).font("Helvetica-Bold");
+  doc.text("Worker Name", colX[0], tableTop + 5, { width: 115 });
+  doc.text("Position", colX[1], tableTop + 5, { width: 95 });
+  doc.text("Type", colX[2], tableTop + 5, { width: 65 });
+  doc.text("Rate/Salary", colX[3], tableTop + 5, { width: 65 });
+  doc.text("Days/Month", colX[4], tableTop + 5, { width: 65 });
+  doc.text("Total (RWF)", colX[5], tableTop + 5, { width: 65 });
 
   let y = tableTop + 22;
   let grandTotal = 0;
-  doc.font("Helvetica").fontSize(9).fillColor("#000000");
+  doc.font("Helvetica").fontSize(8).fillColor("#000000");
 
   rows.forEach((row, i) => {
     if (i % 2 === 0) doc.rect(50, y - 2, 495, 18).fill("#f0f4ff");
     doc.fillColor("#000000");
-    doc.text(row.full_name, colX[0], y, { width: 145 });
-    doc.text(row.position, colX[1], y, { width: 105 });
-    doc.text(row.total_days_worked.toFixed(2), colX[2], y, { width: 55 });
-    doc.text(Number(row.rate_per_day).toLocaleString(), colX[3], y, {
-      width: 75,
+    doc.text(row.full_name, colX[0], y, { width: 115 });
+    doc.text(row.position, colX[1], y, { width: 95 });
+    doc.text(row.type, colX[2], y, { width: 65 });
+    doc.text(Number(row.rate_or_salary).toLocaleString(), colX[3], y, {
+      width: 65,
     });
-    doc.text(row.total_amount.toLocaleString(), colX[4], y, { width: 95 });
+    doc.text(row.days_or_status, colX[4], y, { width: 65 });
+    doc.text(row.total_amount.toLocaleString(), colX[5], y, { width: 65 });
     grandTotal += row.total_amount;
     y += 20;
 
@@ -338,8 +362,8 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   // Total row
   doc.rect(50, y, 495, 22).fill("#e5e7eb");
   doc.fillColor("#000000").font("Helvetica-Bold").fontSize(10);
-  doc.text("TOTAL PAYROLL", colX[0], y + 5, { width: 390 });
-  doc.text(`${grandTotal.toLocaleString()} RWF`, colX[4], y + 5, { width: 95 });
+  doc.text("TOTAL PAYROLL", colX[0], y + 5, { width: 350 });
+  doc.text(`${grandTotal.toLocaleString()} RWF`, colX[5], y + 5, { width: 65 });
 
   // Footer
   doc.moveDown(3);
@@ -444,6 +468,32 @@ exports.generateInventoryPDF = async (project_id, start_date, end_date) => {
 
 exports.getPayrollReportData = async (project_id, start_date, end_date) => {
   try {
+    // Parse dates
+    const endDateObj = new Date(end_date);
+    const year = endDateObj.getFullYear();
+    const month = endDateObj.getMonth();
+
+    // Check if we're in the last 5 days of the month (end of week payroll scenario)
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dayOfMonth = endDateObj.getDate();
+    const isNearMonthEnd = dayOfMonth >= daysInMonth - 4; // Last 5 days
+
+    // If near month end, recalculate period to full month
+    let adjustedStartDate = start_date;
+    let adjustedEndDate = end_date;
+    let isMonthPayroll = false;
+
+    if (isNearMonthEnd) {
+      // Set start to 1st of the month
+      const monthStart = new Date(year, month, 1);
+      adjustedStartDate = monthStart.toISOString().split('T')[0];
+      
+      // Set end to last day of month
+      const monthEnd = new Date(year, month + 1, 0);
+      adjustedEndDate = monthEnd.toISOString().split('T')[0];
+      isMonthPayroll = true;
+    }
+
     // Get workers for the project
     const { data: workers } = await supabaseAdmin
       .from("workers")
@@ -451,32 +501,48 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
       .eq("project_id", project_id)
       .eq("is_active", true);
 
-    // Get attendance records
+    // Get attendance records for the adjusted period
     const { data: attendance } = await supabaseAdmin
       .from("attendance")
       .select("*")
       .eq("project_id", project_id)
-      .gte("attendance_date", start_date)
-      .lte("attendance_date", end_date);
+      .gte("attendance_date", adjustedStartDate)
+      .lte("attendance_date", adjustedEndDate);
 
     // Calculate payroll for each worker
     const workersPayroll = (workers || []).map((worker) => {
-      const workerAttendance = (attendance || []).filter(
-        (a) => a.worker_id === worker.id,
-      );
-      const total_days_worked = workerAttendance.reduce(
-        (sum, a) => sum + parseFloat(a.days_worked || 0),
-        0,
-      );
-      const total_amount =
-        parseFloat(worker.rate_per_day || 0) * total_days_worked;
+      let total_amount = 0;
+      let total_days_worked = 0;
+
+      if (worker.payment_type === "daily") {
+        // Daily workers: calculate from attendance
+        const workerAttendance = (attendance || []).filter(
+          (a) => a.worker_id === worker.id,
+        );
+        total_days_worked = workerAttendance.reduce(
+          (sum, a) => sum + parseFloat(a.days_worked || 0),
+          0,
+        );
+        total_amount = parseFloat(worker.rate_per_day || 0) * total_days_worked;
+      } else if (worker.payment_type === "monthly") {
+        // Monthly workers: include salary if it's month-end payroll
+        if (isMonthPayroll) {
+          total_amount = parseFloat(worker.monthly_salary || 0);
+          total_days_worked = 1; // Full month worked
+        } else {
+          total_amount = 0;
+          total_days_worked = 0;
+        }
+      }
 
       return {
         id: worker.id,
         full_name: worker.full_name,
         phone: worker.phone,
         position: worker.position,
+        payment_type: worker.payment_type,
         rate_per_day: parseFloat(worker.rate_per_day || 0),
+        monthly_salary: parseFloat(worker.monthly_salary || 0),
         total_days_worked,
         total_amount,
       };
@@ -489,6 +555,27 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
           (sum, w) => sum + w.total_amount,
           0,
         ),
+        isMonthPayroll,
+        adjustedStartDate,
+        adjustedEndDate,
+      },
+    };
+  } catch (error) {
+    console.error("Get payroll report data error:", error);
+    throw error;
+  }
+};
+      };
+    });
+
+    return {
+      data: {
+        workers: workersPayroll,
+        total_payroll: workersPayroll.reduce(
+          (sum, w) => sum + w.total_amount,
+          0,
+        ),
+        isMonthComplete,
       },
     };
   } catch (error) {
