@@ -27,6 +27,11 @@ const BudgetTracking = () => {
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
+  // Source data for spending references
+  const [workers, setWorkers] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+
   const [budgetForm, setBudgetForm] = useState({
     total_budget: "",
     labor_budget: "",
@@ -41,6 +46,9 @@ const BudgetTracking = () => {
     description: "",
     amount: "",
     spending_date: new Date().toISOString().split("T")[0],
+    worker_id: "",
+    inventory_item_id: "",
+    expense_id: "",
   });
 
   useEffect(() => {
@@ -53,6 +61,8 @@ const BudgetTracking = () => {
       fetchSummary();
       fetchSpending();
       fetchAlerts();
+      // Load source data for spending references
+      loadSourceData();
     }
   }, [selectedProject]);
 
@@ -65,6 +75,21 @@ const BudgetTracking = () => {
       }
     } catch (error) {
       toast.error("Failed to load projects");
+    }
+  };
+
+  const loadSourceData = async () => {
+    try {
+      const [workersData, inventoryData, expensesData] = await Promise.all([
+        api.getProjectWorkers({ project_id: selectedProject }),
+        api.getProjectInventory({ project_id: selectedProject }),
+        api.getProjectExpenses({ project_id: selectedProject }),
+      ]);
+      setWorkers(workersData || []);
+      setInventoryItems(inventoryData || []);
+      setExpenses(expensesData || []);
+    } catch (error) {
+      console.error("Failed to load source data:", error);
     }
   };
 
@@ -157,11 +182,31 @@ const BudgetTracking = () => {
   const handleRecordSpending = async (e) => {
     e.preventDefault();
     try {
-      await api.recordSpending({
+      const spendingData = {
         project_id: selectedProject,
-        ...spendingForm,
+        category: spendingForm.category,
+        description: spendingForm.description,
         amount: parseFloat(spendingForm.amount),
-      });
+        spending_date: spendingForm.spending_date,
+      };
+
+      // Add appropriate reference based on category
+      if (spendingForm.category === "labor" && spendingForm.worker_id) {
+        spendingData.worker_id = spendingForm.worker_id;
+      } else if (
+        (spendingForm.category === "materials" ||
+          spendingForm.category === "equipment") &&
+        spendingForm.inventory_item_id
+      ) {
+        spendingData.inventory_item_id = spendingForm.inventory_item_id;
+      } else if (
+        spendingForm.category === "other" &&
+        spendingForm.expense_id
+      ) {
+        spendingData.expense_id = spendingForm.expense_id;
+      }
+
+      await api.recordSpending(spendingData);
       toast.success("Spending recorded");
       setShowSpendingModal(false);
       setSpendingForm({
@@ -169,6 +214,9 @@ const BudgetTracking = () => {
         description: "",
         amount: "",
         spending_date: new Date().toISOString().split("T")[0],
+        worker_id: "",
+        inventory_item_id: "",
+        expense_id: "",
       });
       fetchSpending();
       fetchSummary();
@@ -199,6 +247,13 @@ const BudgetTracking = () => {
       other: "bg-gray-100 text-gray-800",
     };
     return colors[category] || "bg-gray-100";
+  };
+
+  const getSourceDisplayName = (record) => {
+    if (record.worker_name) return record.worker_name;
+    if (record.inventory_name) return record.inventory_name;
+    if (record.expense_type) return record.expense_type;
+    return record.description || "No reference";
   };
 
   return (
@@ -475,13 +530,17 @@ const BudgetTracking = () => {
                       {record.category}
                     </span>
                   </div>
+                  <p className="text-sm font-medium text-gray-800 mb-1">
+                    {getSourceDisplayName(record)}
+                  </p>
                   {record.description && (
-                    <p className="text-sm text-gray-700 mb-1">
+                    <p className="text-sm text-gray-700">
                       {record.description}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500">
-                    {new Date(record.spending_date).toLocaleDateString()}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(record.spending_date).toLocaleDateString()} •
+                    Recorded by {record.recorded_by_name || "System"}
                   </p>
                 </div>
                 <div className="text-right mr-4">
@@ -632,12 +691,15 @@ const BudgetTracking = () => {
                 </label>
                 <select
                   value={spendingForm.category}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setSpendingForm({
                       ...spendingForm,
                       category: e.target.value,
-                    })
-                  }
+                      worker_id: "",
+                      inventory_item_id: "",
+                      expense_id: "",
+                    });
+                  }}
                   className="input-field"
                 >
                   <option value="labor">Labor</option>
@@ -646,6 +708,97 @@ const BudgetTracking = () => {
                   <option value="other">Other</option>
                 </select>
               </div>
+
+              {/* Workers dropdown for labor */}
+              {spendingForm.category === "labor" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Worker *
+                  </label>
+                  <select
+                    value={spendingForm.worker_id}
+                    onChange={(e) =>
+                      setSpendingForm({
+                        ...spendingForm,
+                        worker_id: e.target.value,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="">-- Choose a worker --</option>
+                    {workers.map((worker) => (
+                      <option key={worker.id} value={worker.id}>
+                        {worker.full_name} ({worker.position})
+                      </option>
+                    ))}
+                  </select>
+                  {workers.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      No active workers in this project
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Inventory dropdown for materials/equipment */}
+              {(spendingForm.category === "materials" ||
+                spendingForm.category === "equipment") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select {spendingForm.category} Item *
+                  </label>
+                  <select
+                    value={spendingForm.inventory_item_id}
+                    onChange={(e) =>
+                      setSpendingForm({
+                        ...spendingForm,
+                        inventory_item_id: e.target.value,
+                      })
+                    }
+                    className="input-field"
+                    required
+                  >
+                    <option value="">-- Choose an item --</option>
+                    {inventoryItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} ({item.quantity} {item.unit})
+                      </option>
+                    ))}
+                  </select>
+                  {inventoryItems.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      No inventory items available in this project
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Expenses dropdown for other */}
+              {spendingForm.category === "other" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Expense (Optional)
+                  </label>
+                  <select
+                    value={spendingForm.expense_id}
+                    onChange={(e) =>
+                      setSpendingForm({
+                        ...spendingForm,
+                        expense_id: e.target.value,
+                      })
+                    }
+                    className="input-field"
+                  >
+                    <option value="">-- Choose an expense (or leave blank) --</option>
+                    {expenses.map((expense) => (
+                      <option key={expense.id} value={expense.id}>
+                        {expense.expense_type} - {expense.amount?.toLocaleString()} RWF
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -661,7 +814,7 @@ const BudgetTracking = () => {
                     })
                   }
                   className="input-field"
-                  placeholder="What was spent on?"
+                  placeholder="Note about this spending"
                 />
               </div>
 

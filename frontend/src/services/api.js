@@ -271,6 +271,14 @@ export default {
   getSpending: (p) => extractData(api.get("/budgets/spending", { params: p })),
   deleteSpending: (id) => extractData(api.delete(`/budgets/spending/${id}`)),
 
+  // Spending source data (for dropdowns)
+  getProjectWorkers: (p) =>
+    extractData(api.get("/budgets/sources/workers", { params: p })),
+  getProjectInventory: (p) =>
+    extractData(api.get("/budgets/sources/inventory", { params: p })),
+  getProjectExpenses: (p) =>
+    extractData(api.get("/budgets/sources/expenses", { params: p })),
+
   get: (u, c) => api.get(u, c),
   post: (u, d, c) => api.post(u, d, c),
   put: (u, d, c) => api.put(u, d, c),

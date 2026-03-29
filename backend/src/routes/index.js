@@ -581,6 +581,26 @@ router.delete(
   budgetController.deleteSpending,
 );
 
+// Spending source data routes (for dropdowns)
+router.get(
+  "/budgets/sources/workers",
+  auth,
+  getUserProjects,
+  budgetController.getProjectWorkers,
+);
+router.get(
+  "/budgets/sources/inventory",
+  auth,
+  getUserProjects,
+  budgetController.getProjectInventory,
+);
+router.get(
+  "/budgets/sources/expenses",
+  auth,
+  getUserProjects,
+  budgetController.getProjectExpenses,
+);
+
 // Debug endpoint for testing updates
 router.get("/debug/updates", async (req, res) => {
   try {

@@ -133,7 +133,7 @@ exports.updateBudget = async (req, res) => {
   }
 };
 
-// Record spending
+// Record spending with proper references to workers, inventory, and expenses
 exports.recordSpending = async (req, res) => {
   try {
     const {
@@ -142,8 +142,9 @@ exports.recordSpending = async (req, res) => {
       description,
       amount,
       spending_date,
-      reference_id,
-      reference_type,
+      worker_id,
+      inventory_item_id,
+      expense_id,
     } = req.body;
 
     if (!project_id || !category || !amount || !spending_date) {
@@ -158,18 +159,88 @@ exports.recordSpending = async (req, res) => {
       });
     }
 
+    // Validate references based on category
+    if (category === "labor" && !worker_id) {
+      return res.status(400).json({
+        error: "Labor spending requires a worker ID",
+      });
+    }
+
+    if (category === "labor" && worker_id) {
+      const { data: worker } = await supabaseAdmin
+        .from("workers")
+        .select("id")
+        .eq("id", worker_id)
+        .eq("project_id", project_id)
+        .single();
+      
+      if (!worker) {
+        return res.status(400).json({
+          error: "Worker not found in this project",
+        });
+      }
+    }
+
+    if (
+      (category === "materials" || category === "equipment") &&
+      !inventory_item_id
+    ) {
+      return res.status(400).json({
+        error: `${category} spending requires an inventory item ID`,
+      });
+    }
+
+    if (
+      (category === "materials" || category === "equipment") &&
+      inventory_item_id
+    ) {
+      const { data: item } = await supabaseAdmin
+        .from("inventory_items")
+        .select("id")
+        .eq("id", inventory_item_id)
+        .eq("project_id", project_id)
+        .single();
+      
+      if (!item) {
+        return res.status(400).json({
+          error: "Inventory item not found in this project",
+        });
+      }
+    }
+
+    if (category === "other" && expense_id) {
+      const { data: expense } = await supabaseAdmin
+        .from("expenses")
+        .select("id")
+        .eq("id", expense_id)
+        .eq("project_id", project_id)
+        .single();
+      
+      if (!expense) {
+        return res.status(400).json({
+          error: "Expense not found in this project",
+        });
+      }
+    }
+
+    const spendingData = {
+      project_id,
+      category,
+      description,
+      amount: parseFloat(amount),
+      spending_date,
+      recorded_by: req.user.id,
+    };
+
+    // Add specific references based on category
+    if (category === "labor") spendingData.worker_id = worker_id;
+    if (category === "materials" || category === "equipment")
+      spendingData.inventory_item_id = inventory_item_id;
+    if (category === "other") spendingData.expense_id = expense_id;
+
     const { data, error } = await supabaseAdmin
       .from("budget_spending")
-      .insert({
-        project_id,
-        category,
-        description,
-        amount,
-        spending_date,
-        reference_id,
-        reference_type,
-        recorded_by: req.user.id,
-      })
+      .insert(spendingData)
       .select()
       .single();
 
@@ -182,12 +253,12 @@ exports.recordSpending = async (req, res) => {
   }
 };
 
-// Get spending records
+// Get spending records with detailed references
 exports.getSpending = async (req, res) => {
   try {
     const { project_id, category, start_date, end_date } = req.query;
 
-    let query = supabaseAdmin.from("budget_spending").select("*");
+    let query = supabaseAdmin.from("budget_spending_detail").select("*");
 
     if (project_id) {
       query = query.eq("project_id", project_id);
@@ -218,6 +289,82 @@ exports.getSpending = async (req, res) => {
   }
 };
 
+// Get active workers for labor spending selection
+exports.getProjectWorkers = async (req, res) => {
+  try {
+    const { project_id } = req.query;
+
+    if (!project_id) {
+      return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("workers")
+      .select("id, full_name, position, rate_per_day, monthly_salary")
+      .eq("project_id", project_id)
+      .eq("is_active", true)
+      .order("full_name");
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Get workers error:", error);
+    res.status(500).json({ error: "Failed to fetch workers" });
+  }
+};
+
+// Get inventory items for materials/equipment spending selection
+exports.getProjectInventory = async (req, res) => {
+  try {
+    const { project_id } = req.query;
+
+    if (!project_id) {
+      return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("inventory_items")
+      .select(
+        "id, name, quantity, unit, unit_price, total_price, category_id, category:inventory_categories(id, name, type)",
+      )
+      .eq("project_id", project_id)
+      .gt("quantity", 0)
+      .order("name");
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Get inventory error:", error);
+    res.status(500).json({ error: "Failed to fetch inventory items" });
+  }
+};
+
+// Get expenses for other spending selection
+exports.getProjectExpenses = async (req, res) => {
+  try {
+    const { project_id } = req.query;
+
+    if (!project_id) {
+      return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("expenses")
+      .select("id, expense_type, description, amount, expense_date")
+      .eq("project_id", project_id)
+      .order("expense_date", { ascending: false });
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Get expenses error:", error);
+    res.status(500).json({ error: "Failed to fetch expenses" });
+  }
+};
+
 // Delete spending record
 exports.deleteSpending = async (req, res) => {
   try {
@@ -235,6 +382,7 @@ exports.deleteSpending = async (req, res) => {
     console.error("Delete spending error:", error);
     res.status(500).json({ error: "Failed to delete spending record" });
   }
+
 };
 
 // Get budget alerts (over budget, near limit, etc.)
