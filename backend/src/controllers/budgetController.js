@@ -286,7 +286,11 @@ exports.getSpending = async (req, res) => {
   try {
     const { project_id, category, start_date, end_date } = req.query;
 
-    if (project_id && req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+    if (
+      project_id &&
+      req.userProjects !== "all" &&
+      !req.userProjects.includes(project_id)
+    ) {
       return res.status(403).json({
         error: "You do not have permission to view spending for this project",
       });
