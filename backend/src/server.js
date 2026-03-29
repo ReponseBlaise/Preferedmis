@@ -11,6 +11,8 @@ const allowedOrigins = [
   "https://mis.preferred.rw",
   "http://localhost:5173",
   "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
   // Allow Vercel preview and production domains
   "https://preferredmis-frontend.vercel.app",
   "https://preferredmis-backend.vercel.app",

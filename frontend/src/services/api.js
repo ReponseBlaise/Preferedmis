@@ -1,7 +1,43 @@
 import axios from "axios";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://preferedmisbackend.vercel.app/api";
+// Determine API URL based on environment
+const getAPIUrl = () => {
+  // 1. Use explicit VITE_API_URL if set (development with .env.local)
+  if (import.meta.env.VITE_API_URL) {
+    console.log('[API] Using VITE_API_URL:', import.meta.env.VITE_API_URL);
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // 2. If on localhost, use local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const localUrl = 'http://localhost:5000/api';
+    console.log('[API] Using local backend:', localUrl);
+    return localUrl;
+  }
+
+  // 3. If on a custom domain with http (not https), try localhost
+  if (window.location.protocol === 'http:' && window.location.port) {
+    const localUrl = `http://${window.location.hostname}:5000/api`;
+    console.log('[API] Using local backend via custom domain:', localUrl);
+    return localUrl;
+  }
+
+  // 4. If on HTTPS domain (production), we can't access localhost
+  // In this case, the backend should be on the same domain/port or use Vercel
+  if (window.location.protocol === 'https:') {
+    // Try to use the same domain with port 5000 (if exposed) or fall back to Vercel
+    const sameDomainUrl = `https://${window.location.hostname}:5000/api`;
+    console.log('[API] HTTPS detected, trying same domain with port 5000:', sameDomainUrl);
+    // We'll try this but fall back if it fails
+  }
+
+  // 5. Default to Vercel production backend
+  const vercelUrl = 'https://preferedmisbackend.vercel.app/api';
+  console.log('[API] Using Vercel production backend:', vercelUrl);
+  return vercelUrl;
+};
+
+const API_URL = getAPIUrl();
 
 const api = axios.create({
   baseURL: API_URL,
