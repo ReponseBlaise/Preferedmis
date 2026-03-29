@@ -565,21 +565,3 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
     throw error;
   }
 };
-      };
-    });
-
-    return {
-      data: {
-        workers: workersPayroll,
-        total_payroll: workersPayroll.reduce(
-          (sum, w) => sum + w.total_amount,
-          0,
-        ),
-        isMonthPayroll,
-      },
-    };
-  } catch (error) {
-    console.error("Get payroll report data error:", error);
-    throw error;
-  }
-};
