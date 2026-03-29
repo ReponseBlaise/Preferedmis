@@ -162,11 +162,11 @@ const Inventory = () => {
     }
   };
 
-  const exportInventory = async (format = "excel") => {
+  const exportInventory = async (exportFormat = "excel") => {
     try {
       let response, mimeType, fileName;
 
-      if (format === "pdf") {
+      if (exportFormat === "pdf") {
         response = await api.exportInventoryPDF({
           project_id: selectedProject,
         });
@@ -191,7 +191,7 @@ const Inventory = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success(`Exported to ${format.toUpperCase()} successfully`);
+      toast.success(`Exported to ${exportFormat.toUpperCase()} successfully`);
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Export failed");
