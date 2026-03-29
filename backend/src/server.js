@@ -25,7 +25,16 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
+      
+      // Allow localhost development (any port)
+      if (origin && (origin.includes("localhost") || origin.includes("127.0.0.1"))) {
+        return callback(null, true);
+      }
+      
+      // Check production domains
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      
+      console.warn("[CORS] Blocked origin:", origin);
       callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
