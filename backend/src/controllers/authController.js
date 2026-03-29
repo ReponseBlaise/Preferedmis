@@ -27,6 +27,24 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
+    // For public registration (register-admin endpoint), only allow if no users exist yet
+    // This prevents unauthorized user creation after initial setup
+    if (req.path === '/auth/register-admin') {
+      const { data: allUsers } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .limit(1);
+      
+      if (allUsers && allUsers.length > 0) {
+        return res.status(403).json({ error: 'Registration is now closed. Contact an administrator.' });
+      }
+      
+      // Public registration only allows manager role for safety
+      if (role !== 'manager') {
+        return res.status(400).json({ error: 'First user must be a manager' });
+      }
+    }
+
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,

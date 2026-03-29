@@ -28,6 +28,7 @@ const upload = multer({
 });
 
 // Auth routes
+router.post("/auth/register-admin", authController.register); // Public endpoint to create first admin
 router.post(
   "/auth/register",
   auth,
