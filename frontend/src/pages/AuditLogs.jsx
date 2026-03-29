@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Activity, Filter, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, Filter, Download, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 const AuditLogs = () => {
   const { t } = useTranslation();
+  const { user, isManager } = useAuth();
+  const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -16,6 +20,14 @@ const AuditLogs = () => {
     end_date: ''
   });
   const [users, setUsers] = useState([]);
+
+  // Check if user is manager
+  useEffect(() => {
+    if (user && !isManager) {
+      toast.error('Access denied. Only managers can view audit logs.');
+      navigate('/dashboard');
+    }
+  }, [user, isManager, navigate]);
 
   useEffect(() => {
     fetchLogs();
@@ -74,6 +86,16 @@ const AuditLogs = () => {
   };
 
   if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
+
+  if (!isManager) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <Shield size={48} className="text-red-500" />
+        <h2 className="text-xl font-semibold text-gray-700">Access Denied</h2>
+        <p className="text-gray-600">Only managers can view audit logs.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -2,6 +2,11 @@ const { supabaseAdmin } = require('../config/supabase');
 
 exports.getAuditLogs = async (req, res) => {
   try {
+    // Verify user is a manager
+    if (req.user?.role !== 'manager') {
+      return res.status(403).json({ error: 'Access denied. Only managers can view audit logs.' });
+    }
+
     const { action, table_name, user_id, start_date, end_date } = req.query;
     
     let query = supabaseAdmin
