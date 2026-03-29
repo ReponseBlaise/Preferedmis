@@ -19,6 +19,13 @@ exports.createBudget = async (req, res) => {
         .json({ error: "Project ID and total budget are required" });
     }
 
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to create budget for this project",
+      });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("project_budgets")
       .insert({
@@ -52,6 +59,13 @@ exports.getBudget = async (req, res) => {
       return res.status(400).json({ error: "Project ID is required" });
     }
 
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to access this project's budget",
+      });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("project_budgets")
       .select("*")
@@ -74,6 +88,13 @@ exports.getBudgetSummary = async (req, res) => {
 
     if (!project_id) {
       return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to access this project's budget",
+      });
     }
 
     const { data, error } = await supabaseAdmin
@@ -135,8 +156,7 @@ exports.updateBudget = async (req, res) => {
 
 // Record spending with proper references to workers, inventory, and expenses
 exports.recordSpending = async (req, res) => {
-  try {
-    const {
+  try {\n    const {
       project_id,
       category,
       description,
@@ -150,6 +170,13 @@ exports.recordSpending = async (req, res) => {
     if (!project_id || !category || !amount || !spending_date) {
       return res.status(400).json({
         error: "Project ID, category, amount, and spending date are required",
+      });
+    }
+
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to record spending for this project",
       });
     }
 
@@ -258,6 +285,12 @@ exports.getSpending = async (req, res) => {
   try {
     const { project_id, category, start_date, end_date } = req.query;
 
+    if (project_id && req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to view spending for this project",
+      });
+    }
+
     let query = supabaseAdmin.from("budget_spending_detail").select("*");
 
     if (project_id) {
@@ -298,6 +331,13 @@ exports.getProjectWorkers = async (req, res) => {
       return res.status(400).json({ error: "Project ID is required" });
     }
 
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to access this project's workers",
+      });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("workers")
       .select("id, full_name, position, rate_per_day, monthly_salary")
@@ -321,6 +361,13 @@ exports.getProjectInventory = async (req, res) => {
 
     if (!project_id) {
       return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to access this project's inventory",
+      });
     }
 
     const { data, error } = await supabaseAdmin
@@ -348,6 +395,13 @@ exports.getProjectExpenses = async (req, res) => {
 
     if (!project_id) {
       return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to access this project's expenses",
+      });
     }
 
     const { data, error } = await supabaseAdmin
