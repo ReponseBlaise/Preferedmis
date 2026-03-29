@@ -433,4 +433,23 @@ router.get("/updates/:id", auth, publicUpdateController.getPublicUpdate);
 router.put("/updates/:id", auth, publicUpdateController.updatePublicUpdate);
 router.delete("/updates/:id", auth, publicUpdateController.deletePublicUpdate);
 
+// Debug endpoint for testing updates
+router.get("/debug/updates", async (req, res) => {
+  try {
+    const { supabaseAdmin } = require("../config/supabase");
+    const { data, error } = await supabaseAdmin
+      .from("public_updates")
+      .select("*")
+      .limit(10);
+    
+    if (error) {
+      return res.json({ error: error.message, code: error.code });
+    }
+    
+    res.json({ count: (data || []).length, updates: data || [] });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 module.exports = router;

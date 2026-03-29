@@ -53,51 +53,85 @@ exports.createPublicUpdate = async (req, res) => {
 // Get all public updates
 exports.getPublicUpdates = async (req, res) => {
   try {
-    const { project_id, type, limit = 50 } = req.query;
+    const { project_id, type, priority, limit = 50 } = req.query;
 
+    // Build query
     let query = supabaseAdmin
       .from('public_updates')
-      .select('*')
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
+      .select('*');
 
+    // Apply filters
     if (project_id) {
       query = query.eq('project_id', project_id);
     }
 
-    if (type) {
+    if (type && type !== 'all') {
       query = query.eq('type', type);
     }
 
-    // Filter out expired updates
-    query = query.or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+    if (priority && priority !== 'all') {
+      query = query.eq('priority', priority);
+    }
+
+    // Order and limit
+    query = query
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
 
     const { data: updates, error } = await query;
 
     if (error) {
       console.error('Get public updates query error:', error);
-      throw error;
+      return res.status(500).json({ error: 'Failed to fetch updates from database', details: error.message });
+    }
+
+    if (!updates || updates.length === 0) {
+      return res.json([]);
     }
 
     // Enrich with author and project info
-    const enrichedUpdates = await Promise.all((updates || []).map(async (update) => {
-      const [authorData, projectData] = await Promise.all([
-        supabaseAdmin.from('users').select('full_name, email').eq('id', update.author_id).single(),
-        update.project_id ? supabaseAdmin.from('projects').select('name').eq('id', update.project_id).single() : { data: null }
-      ]);
+    const enrichedUpdates = await Promise.all(
+      updates.map(async (update) => {
+        try {
+          // Fetch author info
+          const { data: authorData } = await supabaseAdmin
+            .from('users')
+            .select('full_name, email')
+            .eq('id', update.author_id)
+            .single();
 
-      return {
-        ...update,
-        author: authorData.data,
-        project: projectData.data
-      };
-    }));
+          // Fetch project info if exists
+          let projectData = null;
+          if (update.project_id) {
+            const { data } = await supabaseAdmin
+              .from('projects')
+              .select('name')
+              .eq('id', update.project_id)
+              .single();
+            projectData = data;
+          }
 
-    res.json(enrichedUpdates || []);
+          return {
+            ...update,
+            author: authorData || { full_name: 'Unknown', email: '' },
+            project: projectData || null
+          };
+        } catch (err) {
+          console.error('Error enriching update:', err);
+          return {
+            ...update,
+            author: { full_name: 'Unknown', email: '' },
+            project: null
+          };
+        }
+      })
+    );
+
+    res.json(enrichedUpdates);
   } catch (error) {
     console.error('Get public updates error:', error);
-    res.status(500).json({ error: 'Failed to fetch public updates' });
+    res.status(500).json({ error: 'Failed to fetch public updates', details: error.message });
   }
 };
 

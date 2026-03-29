@@ -52,11 +52,14 @@ const PublicUpdates = () => {
       if (filterType !== "all") params.type = filterType;
       if (filterPriority !== "all") params.priority = filterPriority;
 
+      console.log("Fetching updates with params:", params);
       const response = await api.getUpdates(params);
-      setUpdates(response || []);
+      console.log("Updates response:", response);
+      setUpdates(Array.isArray(response) ? response : response?.data || []);
     } catch (error) {
       console.error("Error fetching updates:", error);
-      toast.error(t("failedToLoadUpdates"));
+      console.error("Error details:", error.response?.data);
+      toast.error(error.response?.data?.error || t("failedToLoadUpdates"));
     } finally {
       setLoading(false);
     }
@@ -71,6 +74,7 @@ const PublicUpdates = () => {
     }
 
     try {
+      console.log("Creating update with data:", createForm);
       await api.createUpdate(createForm);
       toast.success(t("updateCreated"));
       setShowCreateModal(false);
@@ -86,7 +90,8 @@ const PublicUpdates = () => {
       fetchUpdates();
     } catch (error) {
       console.error("Create error:", error);
-      toast.error(error.response?.data?.error || t("createFailed"));
+      console.error("Error details:", error.response?.data);
+      toast.error(error.response?.data?.error || error.message || t("createFailed"));
     }
   };
 
@@ -94,12 +99,14 @@ const PublicUpdates = () => {
     if (!window.confirm(t("confirmDeleteUpdate"))) return;
 
     try {
+      console.log("Deleting update:", id);
       await api.deleteUpdate(id);
       toast.success(t("updateDeleted"));
       fetchUpdates();
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error(error.response?.data?.error || t("deleteFailed"));
+      console.error("Error details:", error.response?.data);
+      toast.error(error.response?.data?.error || error.message || t("deleteFailed"));
     }
   };
 
