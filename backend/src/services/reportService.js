@@ -87,19 +87,22 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
   const displayEndDate = payrollData.adjustedEndDate || end_date;
   const payrollType = payrollData.isMonthPayroll ? "(MONTH-END PAYROLL)" : "";
 
-  worksheet.getCell("A4").value = `Period: ${displayStartDate} to ${displayEndDate} ${payrollType}`;
+  worksheet.getCell("A4").value =
+    `Period: ${displayStartDate} to ${displayEndDate} ${payrollType}`;
 
   let grandTotal = 0;
 
   (payrollData.workers || []).forEach((w, i) => {
     grandTotal += w.total_amount;
 
-    const rateInfo = w.payment_type === "daily" 
-      ? w.rate_per_day 
-      : w.monthly_salary;
-    const daysInfo = w.payment_type === "daily" 
-      ? w.total_days_worked.toFixed(2) 
-      : (payrollData.isMonthPayroll ? "1 Month" : "0 Months");
+    const rateInfo =
+      w.payment_type === "daily" ? w.rate_per_day : w.monthly_salary;
+    const daysInfo =
+      w.payment_type === "daily"
+        ? w.total_days_worked.toFixed(2)
+        : payrollData.isMonthPayroll
+          ? "1 Month"
+          : "0 Months";
 
     const row = worksheet.addRow({
       full_name: w.full_name,
@@ -294,7 +297,10 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   doc
     .fontSize(10)
     .fillColor("#555555")
-    .text(`Period: ${displayStartDate} to ${displayEndDate}${isMonthPayroll ? " (MONTH-END)" : ""}`, { align: "center" });
+    .text(
+      `Period: ${displayStartDate} to ${displayEndDate}${isMonthPayroll ? " (MONTH-END)" : ""}`,
+      { align: "center" },
+    );
   doc.moveDown(1.5);
 
   const workers = payrollData.workers || [];
@@ -302,7 +308,7 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
   const rows = workers.map((w) => {
     var rateDisplay;
     var daysDisplay;
-    
+
     if (w.payment_type === "daily") {
       rateDisplay = w.rate_per_day;
       daysDisplay = w.total_days_worked.toFixed(2);
@@ -310,7 +316,7 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
       rateDisplay = w.monthly_salary;
       daysDisplay = isMonthPayroll ? "Month" : "0";
     }
-    
+
     return {
       full_name: w.full_name,
       position: w.position || "",
@@ -486,11 +492,11 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
     if (isNearMonthEnd) {
       // Set start to 1st of the month
       const monthStart = new Date(year, month, 1);
-      adjustedStartDate = monthStart.toISOString().split('T')[0];
-      
+      adjustedStartDate = monthStart.toISOString().split("T")[0];
+
       // Set end to last day of month
       const monthEnd = new Date(year, month + 1, 0);
-      adjustedEndDate = monthEnd.toISOString().split('T')[0];
+      adjustedEndDate = monthEnd.toISOString().split("T")[0];
       isMonthPayroll = true;
     }
 
