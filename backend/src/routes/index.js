@@ -441,11 +441,11 @@ router.get("/debug/updates", async (req, res) => {
       .from("public_updates")
       .select("*")
       .limit(10);
-    
+
     if (error) {
       return res.json({ error: error.message, code: error.code });
     }
-    
+
     res.json({ count: (data || []).length, updates: data || [] });
   } catch (err) {
     res.json({ error: err.message });

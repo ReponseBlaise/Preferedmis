@@ -91,7 +91,9 @@ const PublicUpdates = () => {
     } catch (error) {
       console.error("Create error:", error);
       console.error("Error details:", error.response?.data);
-      toast.error(error.response?.data?.error || error.message || t("createFailed"));
+      toast.error(
+        error.response?.data?.error || error.message || t("createFailed"),
+      );
     }
   };
 
@@ -106,7 +108,9 @@ const PublicUpdates = () => {
     } catch (error) {
       console.error("Delete error:", error);
       console.error("Error details:", error.response?.data);
-      toast.error(error.response?.data?.error || error.message || t("deleteFailed"));
+      toast.error(
+        error.response?.data?.error || error.message || t("deleteFailed"),
+      );
     }
   };
 

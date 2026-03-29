@@ -1,52 +1,75 @@
-const { supabaseAdmin } = require('../config/supabase');
-const { sendEmail } = require('../services/emailService');
-const { sendSMS } = require('../services/smsService');
+const { supabaseAdmin } = require("../config/supabase");
+const { sendEmail } = require("../services/emailService");
+const { sendSMS } = require("../services/smsService");
 
 // Create a public update
 exports.createPublicUpdate = async (req, res) => {
   try {
-    const { project_id, title, content, type, priority, is_pinned, expires_at } = req.body;
+    const {
+      project_id,
+      title,
+      content,
+      type,
+      priority,
+      is_pinned,
+      expires_at,
+    } = req.body;
 
     if (!title || !content) {
-      return res.status(400).json({ error: 'Title and content are required' });
+      return res.status(400).json({ error: "Title and content are required" });
     }
 
     const { data: update, error } = await supabaseAdmin
-      .from('public_updates')
+      .from("public_updates")
       .insert({
         project_id: project_id || null,
         author_id: req.user.id,
         title,
         content,
-        type: type || 'announcement',
-        priority: priority || 'normal',
+        type: type || "announcement",
+        priority: priority || "normal",
         is_pinned: is_pinned || false,
-        expires_at: expires_at || null
+        expires_at: expires_at || null,
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (error) throw error;
 
     // Enrich with author and project info
     const [authorData, projectData] = await Promise.all([
-      supabaseAdmin.from('users').select('full_name, email').eq('id', update.author_id).single(),
-      update.project_id ? supabaseAdmin.from('projects').select('name').eq('id', update.project_id).single() : { data: null }
+      supabaseAdmin
+        .from("users")
+        .select("full_name, email")
+        .eq("id", update.author_id)
+        .single(),
+      update.project_id
+        ? supabaseAdmin
+            .from("projects")
+            .select("name")
+            .eq("id", update.project_id)
+            .single()
+        : { data: null },
     ]);
 
     const completeUpdate = {
       ...update,
       author: authorData.data,
-      project: projectData.data
+      project: projectData.data,
     };
 
     // Send notifications to all users
     await notifyUsersAboutUpdate(completeUpdate);
 
-    res.status(201).json({ update: completeUpdate, message: 'Public update created successfully' });
+    res
+      .status(201)
+      .json({
+        update: completeUpdate,
+        message: "Public update created successfully",
+      });
   } catch (error) {
-    console.error('Create public update error:', error);
-    res.status(500).json({ error: 'Failed to create public update' });
+    console.error("Create public update error:", error);
+    res.status(500).json({ error: "Failed to create public update" });
   }
 };
 
@@ -56,34 +79,37 @@ exports.getPublicUpdates = async (req, res) => {
     const { project_id, type, priority, limit = 50 } = req.query;
 
     // Build query
-    let query = supabaseAdmin
-      .from('public_updates')
-      .select('*');
+    let query = supabaseAdmin.from("public_updates").select("*");
 
     // Apply filters
     if (project_id) {
-      query = query.eq('project_id', project_id);
+      query = query.eq("project_id", project_id);
     }
 
-    if (type && type !== 'all') {
-      query = query.eq('type', type);
+    if (type && type !== "all") {
+      query = query.eq("type", type);
     }
 
-    if (priority && priority !== 'all') {
-      query = query.eq('priority', priority);
+    if (priority && priority !== "all") {
+      query = query.eq("priority", priority);
     }
 
     // Order and limit
     query = query
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(parseInt(limit));
 
     const { data: updates, error } = await query;
 
     if (error) {
-      console.error('Get public updates query error:', error);
-      return res.status(500).json({ error: 'Failed to fetch updates from database', details: error.message });
+      console.error("Get public updates query error:", error);
+      return res
+        .status(500)
+        .json({
+          error: "Failed to fetch updates from database",
+          details: error.message,
+        });
     }
 
     if (!updates || updates.length === 0) {
@@ -96,42 +122,47 @@ exports.getPublicUpdates = async (req, res) => {
         try {
           // Fetch author info
           const { data: authorData } = await supabaseAdmin
-            .from('users')
-            .select('full_name, email')
-            .eq('id', update.author_id)
+            .from("users")
+            .select("full_name, email")
+            .eq("id", update.author_id)
             .single();
 
           // Fetch project info if exists
           let projectData = null;
           if (update.project_id) {
             const { data } = await supabaseAdmin
-              .from('projects')
-              .select('name')
-              .eq('id', update.project_id)
+              .from("projects")
+              .select("name")
+              .eq("id", update.project_id)
               .single();
             projectData = data;
           }
 
           return {
             ...update,
-            author: authorData || { full_name: 'Unknown', email: '' },
-            project: projectData || null
+            author: authorData || { full_name: "Unknown", email: "" },
+            project: projectData || null,
           };
         } catch (err) {
-          console.error('Error enriching update:', err);
+          console.error("Error enriching update:", err);
           return {
             ...update,
-            author: { full_name: 'Unknown', email: '' },
-            project: null
+            author: { full_name: "Unknown", email: "" },
+            project: null,
           };
         }
-      })
+      }),
     );
 
     res.json(enrichedUpdates);
   } catch (error) {
-    console.error('Get public updates error:', error);
-    res.status(500).json({ error: 'Failed to fetch public updates', details: error.message });
+    console.error("Get public updates error:", error);
+    res
+      .status(500)
+      .json({
+        error: "Failed to fetch public updates",
+        details: error.message,
+      });
   }
 };
 
@@ -141,27 +172,37 @@ exports.getPublicUpdate = async (req, res) => {
     const { id } = req.params;
 
     const { data: update, error } = await supabaseAdmin
-      .from('public_updates')
-      .select('*')
-      .eq('id', id)
+      .from("public_updates")
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
 
     // Enrich with author and project info
     const [authorData, projectData] = await Promise.all([
-      supabaseAdmin.from('users').select('full_name, email').eq('id', update.author_id).single(),
-      update.project_id ? supabaseAdmin.from('projects').select('name').eq('id', update.project_id).single() : { data: null }
+      supabaseAdmin
+        .from("users")
+        .select("full_name, email")
+        .eq("id", update.author_id)
+        .single(),
+      update.project_id
+        ? supabaseAdmin
+            .from("projects")
+            .select("name")
+            .eq("id", update.project_id)
+            .single()
+        : { data: null },
     ]);
 
     res.json({
       ...update,
       author: authorData.data,
-      project: projectData.data
+      project: projectData.data,
     });
   } catch (error) {
-    console.error('Get public update error:', error);
-    res.status(500).json({ error: 'Failed to fetch public update' });
+    console.error("Get public update error:", error);
+    res.status(500).json({ error: "Failed to fetch public update" });
   }
 };
 
@@ -172,18 +213,18 @@ exports.updatePublicUpdate = async (req, res) => {
     const { title, content, type, priority, is_pinned, expires_at } = req.body;
 
     const { data: existing } = await supabaseAdmin
-      .from('public_updates')
-      .select('*')
-      .eq('id', id)
+      .from("public_updates")
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (!existing) {
-      return res.status(404).json({ error: 'Update not found' });
+      return res.status(404).json({ error: "Update not found" });
     }
 
     // Only author or manager can update
-    if (existing.author_id !== req.user.id && req.user.role !== 'manager') {
-      return res.status(403).json({ error: 'Not authorized to update this' });
+    if (existing.author_id !== req.user.id && req.user.role !== "manager") {
+      return res.status(403).json({ error: "Not authorized to update this" });
     }
 
     const updates = {};
@@ -195,31 +236,41 @@ exports.updatePublicUpdate = async (req, res) => {
     if (expires_at !== undefined) updates.expires_at = expires_at;
 
     const { data: update, error } = await supabaseAdmin
-      .from('public_updates')
+      .from("public_updates")
       .update(updates)
-      .eq('id', id)
-      .select('*')
+      .eq("id", id)
+      .select("*")
       .single();
 
     if (error) throw error;
 
     // Enrich with author and project info
     const [authorData, projectData] = await Promise.all([
-      supabaseAdmin.from('users').select('full_name, email').eq('id', update.author_id).single(),
-      update.project_id ? supabaseAdmin.from('projects').select('name').eq('id', update.project_id).single() : { data: null }
+      supabaseAdmin
+        .from("users")
+        .select("full_name, email")
+        .eq("id", update.author_id)
+        .single(),
+      update.project_id
+        ? supabaseAdmin
+            .from("projects")
+            .select("name")
+            .eq("id", update.project_id)
+            .single()
+        : { data: null },
     ]);
 
-    res.json({ 
+    res.json({
       update: {
         ...update,
         author: authorData.data,
-        project: projectData.data
-      }, 
-      message: 'Update modified successfully' 
+        project: projectData.data,
+      },
+      message: "Update modified successfully",
     });
   } catch (error) {
-    console.error('Update public update error:', error);
-    res.status(500).json({ error: 'Failed to update public update' });
+    console.error("Update public update error:", error);
+    res.status(500).json({ error: "Failed to update public update" });
   }
 };
 
@@ -229,31 +280,31 @@ exports.deletePublicUpdate = async (req, res) => {
     const { id } = req.params;
 
     const { data: existing } = await supabaseAdmin
-      .from('public_updates')
-      .select('*')
-      .eq('id', id)
+      .from("public_updates")
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (!existing) {
-      return res.status(404).json({ error: 'Update not found' });
+      return res.status(404).json({ error: "Update not found" });
     }
 
     // Only author or manager can delete
-    if (existing.author_id !== req.user.id && req.user.role !== 'manager') {
-      return res.status(403).json({ error: 'Not authorized to delete this' });
+    if (existing.author_id !== req.user.id && req.user.role !== "manager") {
+      return res.status(403).json({ error: "Not authorized to delete this" });
     }
 
     const { error } = await supabaseAdmin
-      .from('public_updates')
+      .from("public_updates")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) throw error;
 
-    res.json({ message: 'Update deleted successfully' });
+    res.json({ message: "Update deleted successfully" });
   } catch (error) {
-    console.error('Delete public update error:', error);
-    res.status(500).json({ error: 'Failed to delete public update' });
+    console.error("Delete public update error:", error);
+    res.status(500).json({ error: "Failed to delete public update" });
   }
 };
 
@@ -262,24 +313,24 @@ async function notifyUsersAboutUpdate(update) {
   try {
     // Get all active users
     const { data: users } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('is_active', true);
+      .from("users")
+      .select("*")
+      .eq("is_active", true);
 
     if (!users || users.length === 0) return;
 
     const { data: author } = await supabaseAdmin
-      .from('users')
-      .select('full_name')
-      .eq('id', update.author_id)
+      .from("users")
+      .select("full_name")
+      .eq("id", update.author_id)
       .single();
 
     const title = `New ${update.type}: ${update.title}`;
     const priorityEmoji = {
-      low: '📌',
-      normal: '📢',
-      high: '⚠️',
-      urgent: '🚨'
+      low: "📌",
+      normal: "📢",
+      high: "⚠️",
+      urgent: "🚨",
     };
 
     for (const user of users) {
@@ -287,52 +338,52 @@ async function notifyUsersAboutUpdate(update) {
       if (user.id === update.author_id) continue;
 
       // Create notification
-      await supabaseAdmin.from('notifications').insert({
+      await supabaseAdmin.from("notifications").insert({
         user_id: user.id,
         title,
-        message: `${priorityEmoji[update.priority] || '📢'} ${update.content.substring(0, 200)}${update.content.length > 200 ? '...' : ''}`,
-        type: 'public_update',
+        message: `${priorityEmoji[update.priority] || "📢"} ${update.content.substring(0, 200)}${update.content.length > 200 ? "..." : ""}`,
+        type: "public_update",
         update_id: update.id,
         action_url: `/updates/${update.id}`,
         email_sent: false,
-        sms_sent: false
+        sms_sent: false,
       });
 
       // Send email for high/urgent priority
-      if (['high', 'urgent'].includes(update.priority)) {
+      if (["high", "urgent"].includes(update.priority)) {
         await sendEmail(
           user.email,
           title,
           `
-            <p>Hello ${user.full_name || 'there'},</p>
-            <p>${priorityEmoji[update.priority]} <strong>${author?.full_name || 'Someone'}</strong> posted an important update:</p>
+            <p>Hello ${user.full_name || "there"},</p>
+            <p>${priorityEmoji[update.priority]} <strong>${author?.full_name || "Someone"}</strong> posted an important update:</p>
             <h3>${update.title}</h3>
             <p>${update.content}</p>
             <p>Login to your account to view the full update.</p>
-          `
+          `,
         );
 
         // Update notification email status
         await supabaseAdmin
-          .from('notifications')
+          .from("notifications")
           .update({ email_sent: true })
-          .eq('update_id', update.id)
-          .eq('user_id', user.id);
+          .eq("update_id", update.id)
+          .eq("user_id", user.id);
       }
 
       // Send SMS for urgent priority
-      if (update.priority === 'urgent' && user.phone) {
+      if (update.priority === "urgent" && user.phone) {
         const smsMessage = `URGENT: ${update.title} - ${update.content.substring(0, 100)}...`;
         await sendSMS(user.phone, smsMessage);
 
         await supabaseAdmin
-          .from('notifications')
+          .from("notifications")
           .update({ sms_sent: true })
-          .eq('update_id', update.id)
-          .eq('user_id', user.id);
+          .eq("update_id", update.id)
+          .eq("user_id", user.id);
       }
     }
   } catch (error) {
-    console.error('Notify users error:', error);
+    console.error("Notify users error:", error);
   }
 }
