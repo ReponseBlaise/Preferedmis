@@ -14,6 +14,8 @@ import {
   Users,
   DollarSign,
   Calendar,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -26,6 +28,11 @@ const Workers = () => {
   const [selectedProject, setSelectedProject] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParams] = useSearchParams();
+
+  // Attendance history state
+  const [expandedWorker, setExpandedWorker] = useState(null);
+  const [attendanceHistory, setAttendanceHistory] = useState({});
+  const [loadingAttendance, setLoadingAttendance] = useState({});
 
   // Auto-fill search from global search navigation
   useEffect(() => {
@@ -182,6 +189,46 @@ const Workers = () => {
     setFilterPaymentType("all");
     setFilterStatus("all");
     setFilterPosition("all");
+  };
+
+  // Fetch last 7 days attendance for a worker
+  const fetchWorkerAttendance = async (workerId, workerName) => {
+    if (expandedWorker === workerId) {
+      setExpandedWorker(null);
+      return;
+    }
+
+    setExpandedWorker(workerId);
+    setLoadingAttendance({ ...loadingAttendance, [workerId]: true });
+
+    try {
+      const today = new Date();
+      const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      const startDate = sevenDaysAgo.toISOString().split("T")[0];
+      const endDate = today.toISOString().split("T")[0];
+
+      const data = await api.getAttendance({
+        worker_id: workerId,
+        project_id: selectedProject,
+        start_date: startDate,
+        end_date: endDate,
+      });
+
+      setAttendanceHistory({
+        ...attendanceHistory,
+        [workerId]: data || [],
+      });
+    } catch (error) {
+      console.error("Failed to load attendance:", error);
+      toast.error("Failed to load attendance history");
+      setAttendanceHistory({
+        ...attendanceHistory,
+        [workerId]: [],
+      });
+    } finally {
+      setLoadingAttendance({ ...loadingAttendance, [workerId]: false });
+    }
   };
 
   // Get unique positions for filter
@@ -383,6 +430,9 @@ const Workers = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                        {/* Expand button column */}
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {t("workerName")}
                       </th>
@@ -408,19 +458,33 @@ const Workers = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredWorkers.map((worker) => (
-                      <tr key={worker.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">
-                            {worker.full_name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">
-                            {worker.phone || "-"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">
+                      <React.Fragment key={worker.id}>
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => fetchWorkerAttendance(worker.id, worker.full_name)}
+                              className="text-gray-500 hover:text-primary-600 transition"
+                              title="View attendance history"
+                            >
+                              {expandedWorker === worker.id ? (
+                                <ChevronUp size={18} />
+                              ) : (
+                                <ChevronDown size={18} />
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="font-medium text-gray-900">
+                              {worker.full_name}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">
+                              {worker.phone || "-"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">
                             {worker.position}
                           </div>
                         </td>
@@ -479,7 +543,89 @@ const Workers = () => {
                             </button>
                           </div>
                         </td>
-                      </tr>
+                        </tr>
+
+                        {/* Attendance History Row */}
+                        {expandedWorker === worker.id && (
+                          <tr className="bg-blue-50 border-none">
+                            <td colSpan="8" className="px-6 py-4">
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-semibold text-gray-800">
+                                    📅 Last 7 Days Attendance
+                                  </h4>
+                                  {loadingAttendance[worker.id] && (
+                                    <div className="text-sm text-gray-500">
+                                      Loading...
+                                    </div>
+                                  )}
+                                </div>
+
+                                {loadingAttendance[worker.id] ? (
+                                  <div className="text-center py-6">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                                  </div>
+                                ) : attendanceHistory[worker.id] &&
+                                  attendanceHistory[worker.id].length > 0 ? (
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-white border-b">
+                                          <th className="text-left px-4 py-2 font-medium text-gray-700">
+                                            Date
+                                          </th>
+                                          <th className="text-left px-4 py-2 font-medium text-gray-700">
+                                            Days Worked
+                                          </th>
+                                          <th className="text-left px-4 py-2 font-medium text-gray-700">
+                                            Status
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {attendanceHistory[worker.id].map(
+                                          (record, idx) => (
+                                            <tr
+                                              key={idx}
+                                              className="border-b hover:bg-white"
+                                            >
+                                              <td className="px-4 py-2 text-gray-700">
+                                                {new Date(
+                                                  record.attendance_date,
+                                                ).toLocaleDateString()}
+                                              </td>
+                                              <td className="px-4 py-2 text-gray-700">
+                                                {record.days_worked || 0}
+                                              </td>
+                                              <td className="px-4 py-2">
+                                                {record.days_worked > 0 ? (
+                                                  <span className="flex items-center gap-1 text-green-600">
+                                                    <CheckCircle size={16} />
+                                                    Present
+                                                  </span>
+                                                ) : (
+                                                  <span className="flex items-center gap-1 text-red-600">
+                                                    <XCircle size={16} />
+                                                    Absent
+                                                  </span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ),
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-6 text-gray-500">
+                                    <p>No attendance records for the last 7 days</p>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -490,74 +636,141 @@ const Workers = () => {
                 {filteredWorkers.map((worker) => (
                   <div
                     key={worker.id}
-                    className="bg-white rounded-lg shadow p-4 space-y-3"
+                    className="bg-white rounded-lg shadow overflow-hidden"
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">
-                          {worker.full_name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {worker.position}
-                        </p>
+                    <div className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-gray-800">
+                            {worker.full_name}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {worker.position}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(worker)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(worker.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(worker)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(worker.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-500">{t("phone")}:</span>
+                          <p className="text-gray-800">{worker.phone || "-"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">{t("rate")}:</span>
+                          <p className="text-gray-800">
+                            {worker.payment_type === "monthly"
+                              ? `${worker.monthly_salary || 0} RWF/mo`
+                              : `${worker.rate_per_day || 0} RWF/day`}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">
+                            {t("paymentType")}:
+                          </span>
+                          <span
+                            className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                              worker.payment_type === "daily"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {t(worker.payment_type)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">{t("status")}:</span>
+                          <span
+                            className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                              worker.is_active !== false
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {worker.is_active !== false
+                              ? t("active")
+                              : t("inactive")}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Mobile Attendance Toggle */}
+                      <button
+                        onClick={() =>
+                          fetchWorkerAttendance(worker.id, worker.full_name)
+                        }
+                        className="w-full mt-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        {expandedWorker === worker.id ? (
+                          <>
+                            <ChevronUp size={16} />
+                            Hide Attendance
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={16} />
+                            View Attendance (Last 7 Days)
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-500">{t("phone")}:</span>
-                        <p className="text-gray-800">{worker.phone || "-"}</p>
+
+                    {/* Mobile Attendance History */}
+                    {expandedWorker === worker.id && (
+                      <div className="bg-blue-50 p-4 border-t border-blue-200 space-y-3">
+                        <h4 className="font-semibold text-gray-800 text-sm">
+                          📅 Attendance History
+                        </h4>
+
+                        {loadingAttendance[worker.id] ? (
+                          <div className="text-center py-6">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                          </div>
+                        ) : attendanceHistory[worker.id] &&
+                          attendanceHistory[worker.id].length > 0 ? (
+                          <div className="space-y-2">
+                            {attendanceHistory[worker.id].map((record, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-white p-2 rounded text-xs flex justify-between items-center"
+                              >
+                                <span className="text-gray-700">
+                                  {new Date(
+                                    record.attendance_date,
+                                  ).toLocaleDateString()}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-600">
+                                    {record.days_worked || 0} days
+                                  </span>
+                                  {record.days_worked > 0 ? (
+                                    <CheckCircle size={14} className="text-green-600" />
+                                  ) : (
+                                    <XCircle size={14} className="text-red-600" />
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-600 text-sm text-center py-4">
+                            No attendance records
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <span className="text-gray-500">{t("rate")}:</span>
-                        <p className="text-gray-800">
-                          {worker.payment_type === "monthly"
-                            ? `${worker.monthly_salary || 0} RWF/mo`
-                            : `${worker.rate_per_day || 0} RWF/day`}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">
-                          {t("paymentType")}:
-                        </span>
-                        <span
-                          className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                            worker.payment_type === "daily"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {t(worker.payment_type)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">{t("status")}:</span>
-                        <span
-                          className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                            worker.is_active !== false
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {worker.is_active !== false
-                            ? t("active")
-                            : t("inactive")}
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
