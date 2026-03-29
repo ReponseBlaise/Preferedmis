@@ -4,7 +4,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTranslation } from "react-i18next";
 import {
-  Download,
   Calendar,
   Filter,
   BarChart3,
@@ -78,64 +77,6 @@ const Reports = () => {
       });
     } catch (error) {
       toast.error("Failed to fetch report data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExportPayroll = async () => {
-    try {
-      setLoading(true);
-      const response = await api.exportPayrollExcel({
-        project_id: selectedProject,
-        start_date: startDate,
-        end_date: endDate,
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `payroll_report_${startDate}_to_${endDate}.xlsx`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentElement.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success("Payroll report exported successfully");
-    } catch (error) {
-      toast.error("Failed to export payroll report");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExportInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await api.exportInventoryExcel({
-        project_id: selectedProject,
-        start_date: startDate,
-        end_date: endDate,
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `inventory_report_${startDate}_to_${endDate}.xlsx`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentElement.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success("Inventory report exported successfully");
-    } catch (error) {
-      toast.error("Failed to export inventory report");
     } finally {
       setLoading(false);
     }
@@ -217,105 +158,6 @@ const Reports = () => {
             >
               <Filter className="w-4 h-4" />
               {loading ? "Loading..." : "View Report"}
-            </button>
-          </div>
-        </div>
-
-        {/* Export Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Payroll Report */}
-          <div
-            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-md p-6 border-l-4 border-blue-600`}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-blue-600" />
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {t("payrollReport")}
-                  </h3>
-                  <p
-                    className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Export payroll data for the selected period
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {reportData.payroll && (
-              <div
-                className={`mb-4 p-3 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
-              >
-                <p className="text-sm">
-                  Total Workers: {reportData.payroll.length || 0}
-                </p>
-                {reportData.payroll.length > 0 && (
-                  <p className="text-sm">
-                    Total Payroll:{" "}
-                    {reportData.payroll
-                      .reduce((sum, w) => sum + (w.total_amount || 0), 0)
-                      .toLocaleString()}{" "}
-                    RWF
-                  </p>
-                )}
-              </div>
-            )}
-
-            <button
-              onClick={handleExportPayroll}
-              disabled={loading || !selectedProject}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {t("export")} Excel
-            </button>
-          </div>
-
-          {/* Inventory Report */}
-          <div
-            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-md p-6 border-l-4 border-green-600`}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8 text-green-600" />
-                <div>
-                  <h3 className="text-lg font-semibold">{t("inventory")}</h3>
-                  <p
-                    className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
-                  >
-                    Export inventory data for the selected period
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {reportData.inventory && (
-              <div
-                className={`mb-4 p-3 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
-              >
-                <p className="text-sm">
-                  Total Items: {reportData.inventory.length || 0}
-                </p>
-                {reportData.inventory.length > 0 && (
-                  <p className="text-sm">
-                    Total Value:{" "}
-                    {reportData.inventory
-                      .reduce((sum, item) => sum + (item.total_value || 0), 0)
-                      .toLocaleString()}{" "}
-                    RWF
-                  </p>
-                )}
-              </div>
-            )}
-
-            <button
-              onClick={handleExportInventory}
-              disabled={loading || !selectedProject}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {t("export")} Excel
             </button>
           </div>
         </div>

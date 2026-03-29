@@ -115,12 +115,6 @@ const Layout = () => {
       roles: ["manager", "employee", "storeman"],
     },
     {
-      path: "/documents",
-      icon: File,
-      label: t("documents"),
-      roles: ["manager", "employee", "storeman"],
-    },
-    {
       path: "/reports",
       icon: BarChart3,
       label: t("reports"),
