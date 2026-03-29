@@ -199,10 +199,7 @@ const BudgetTracking = () => {
         spendingForm.inventory_item_id
       ) {
         spendingData.inventory_item_id = spendingForm.inventory_item_id;
-      } else if (
-        spendingForm.category === "other" &&
-        spendingForm.expense_id
-      ) {
+      } else if (spendingForm.category === "other" && spendingForm.expense_id) {
         spendingData.expense_id = spendingForm.expense_id;
       }
 
@@ -790,10 +787,13 @@ const BudgetTracking = () => {
                     }
                     className="input-field"
                   >
-                    <option value="">-- Choose an expense (or leave blank) --</option>
+                    <option value="">
+                      -- Choose an expense (or leave blank) --
+                    </option>
                     {expenses.map((expense) => (
                       <option key={expense.id} value={expense.id}>
-                        {expense.expense_type} - {expense.amount?.toLocaleString()} RWF
+                        {expense.expense_type} -{" "}
+                        {expense.amount?.toLocaleString()} RWF
                       </option>
                     ))}
                   </select>

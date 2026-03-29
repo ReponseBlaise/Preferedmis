@@ -173,7 +173,7 @@ exports.recordSpending = async (req, res) => {
         .eq("id", worker_id)
         .eq("project_id", project_id)
         .single();
-      
+
       if (!worker) {
         return res.status(400).json({
           error: "Worker not found in this project",
@@ -200,7 +200,7 @@ exports.recordSpending = async (req, res) => {
         .eq("id", inventory_item_id)
         .eq("project_id", project_id)
         .single();
-      
+
       if (!item) {
         return res.status(400).json({
           error: "Inventory item not found in this project",
@@ -215,7 +215,7 @@ exports.recordSpending = async (req, res) => {
         .eq("id", expense_id)
         .eq("project_id", project_id)
         .single();
-      
+
       if (!expense) {
         return res.status(400).json({
           error: "Expense not found in this project",
@@ -382,7 +382,6 @@ exports.deleteSpending = async (req, res) => {
     console.error("Delete spending error:", error);
     res.status(500).json({ error: "Failed to delete spending record" });
   }
-
 };
 
 // Get budget alerts (over budget, near limit, etc.)
