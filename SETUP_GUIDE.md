@@ -27,34 +27,42 @@
 ### Scenario 1: Local Development (Recommended)
 
 **Terminal 1 - Start Backend:**
+
 ```bash
 cd backend
 npm run dev
 ```
+
 Expected output:
+
 ```
 Server running on port 5000
 ```
 
 **Terminal 2 - Start Frontend:**
+
 ```bash
 cd frontend
 npm run dev
 ```
+
 Expected output:
+
 ```
 ➜  Local:   http://localhost:5173/
 ```
 
 **Then:**
+
 1. Open browser: `http://localhost:5173`
 2. Should see Login page
-3. Login with: 
+3. Login with:
    - Email: `admin@preferred.rw`
    - Password: `Admin@123`
 
 **Browser Console (F12):**
 You should see logs like:
+
 ```
 [API] Using VITE_API_URL: http://localhost:5000/api
 [API Request] POST /auth/login
@@ -63,6 +71,7 @@ You should see logs like:
 
 **Backend Terminal:**
 You should see logs like:
+
 ```
 [LOGIN] Attempting login for email: admin@preferred.rw
 [LOGIN] Login successful for user: admin@preferred.rw
@@ -80,6 +89,7 @@ If accessing via `https://mis.preferred.rw`:
 4. CORS is configured to accept requests from this domain
 
 **Note:** If you're accessing from a different machine:
+
 - The backend must be exposed to the network (not just localhost)
 - Or use a reverse proxy / VPN setup
 
@@ -94,6 +104,7 @@ node create-admin.js
 ```
 
 Or use Postman/cURL:
+
 ```bash
 curl -X POST http://localhost:5000/api/auth/register-admin \
   -H "Content-Type: application/json" \
@@ -115,6 +126,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
 **Check these in order:**
 
 1. **Is backend running?**
+
    ```bash
    cd backend && npm run dev
    ```

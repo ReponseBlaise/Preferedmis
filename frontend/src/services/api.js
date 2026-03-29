@@ -4,36 +4,42 @@ import axios from "axios";
 const getAPIUrl = () => {
   // 1. Use explicit VITE_API_URL if set (development with .env.local)
   if (import.meta.env.VITE_API_URL) {
-    console.log('[API] Using VITE_API_URL:', import.meta.env.VITE_API_URL);
+    console.log("[API] Using VITE_API_URL:", import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
 
   // 2. If on localhost, use local backend
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    const localUrl = 'http://localhost:5000/api';
-    console.log('[API] Using local backend:', localUrl);
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    const localUrl = "http://localhost:5000/api";
+    console.log("[API] Using local backend:", localUrl);
     return localUrl;
   }
 
   // 3. If on a custom domain with http (not https), try localhost
-  if (window.location.protocol === 'http:' && window.location.port) {
+  if (window.location.protocol === "http:" && window.location.port) {
     const localUrl = `http://${window.location.hostname}:5000/api`;
-    console.log('[API] Using local backend via custom domain:', localUrl);
+    console.log("[API] Using local backend via custom domain:", localUrl);
     return localUrl;
   }
 
   // 4. If on HTTPS domain (production), we can't access localhost
   // In this case, the backend should be on the same domain/port or use Vercel
-  if (window.location.protocol === 'https:') {
+  if (window.location.protocol === "https:") {
     // Try to use the same domain with port 5000 (if exposed) or fall back to Vercel
     const sameDomainUrl = `https://${window.location.hostname}:5000/api`;
-    console.log('[API] HTTPS detected, trying same domain with port 5000:', sameDomainUrl);
+    console.log(
+      "[API] HTTPS detected, trying same domain with port 5000:",
+      sameDomainUrl,
+    );
     // We'll try this but fall back if it fails
   }
 
   // 5. Default to Vercel production backend
-  const vercelUrl = 'https://preferedmisbackend.vercel.app/api';
-  console.log('[API] Using Vercel production backend:', vercelUrl);
+  const vercelUrl = "https://preferedmisbackend.vercel.app/api";
+  console.log("[API] Using Vercel production backend:", vercelUrl);
   return vercelUrl;
 };
 
@@ -52,36 +58,36 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('[API Request]', config.method.toUpperCase(), config.url);
+    console.log("[API Request]", config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error);
+    console.error("[API Request Error]", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 api.interceptors.response.use(
   (response) => {
-    console.log('[API Response]', response.status, response.config.url);
+    console.log("[API Response]", response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error('[API Error]', {
+    console.error("[API Error]", {
       status: error.response?.status,
       url: error.response?.config?.url || error.config?.url,
       message: error.message,
-      corsError: error.message.includes('CORS'),
-      data: error.response?.data
+      corsError: error.message.includes("CORS"),
+      data: error.response?.data,
     });
-    
+
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 const extractData = (p) => p.then((r) => r.data);
