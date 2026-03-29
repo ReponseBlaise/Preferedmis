@@ -1,17 +1,17 @@
-const { supabaseAdmin } = require('../config/supabase');
+const { supabaseAdmin } = require("../config/supabase");
 
 exports.getAuditLogs = async (req, res) => {
   try {
     // Verify user is a manager
-    if (req.user?.role !== 'manager') {
-      return res.status(403).json({ error: 'Access denied. Only managers can view audit logs.' });
+    if (req.user?.role !== "manager") {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Only managers can view audit logs." });
     }
 
     const { action, table_name, user_id, start_date, end_date } = req.query;
-    
-    let query = supabaseAdmin
-      .from('audit_logs')
-      .select(`
+
+    let query = supabaseAdmin.from("audit_logs").select(`
         *,
         users:user_id (
           full_name,
@@ -21,26 +21,26 @@ exports.getAuditLogs = async (req, res) => {
       `);
 
     if (action) {
-      query = query.eq('action', action);
+      query = query.eq("action", action);
     }
 
     if (table_name) {
-      query = query.eq('table_name', table_name);
+      query = query.eq("table_name", table_name);
     }
 
     if (user_id) {
-      query = query.eq('user_id', user_id);
+      query = query.eq("user_id", user_id);
     }
 
     if (start_date) {
-      query = query.gte('created_at', start_date);
+      query = query.gte("created_at", start_date);
     }
 
     if (end_date) {
-      query = query.lte('created_at', end_date + 'T23:59:59');
+      query = query.lte("created_at", end_date + "T23:59:59");
     }
 
-    query = query.order('created_at', { ascending: false }).limit(500);
+    query = query.order("created_at", { ascending: false }).limit(500);
 
     const { data, error } = await query;
 
@@ -48,7 +48,7 @@ exports.getAuditLogs = async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.error('Get audit logs error:', error);
-    res.status(500).json({ error: 'Failed to fetch audit logs' });
+    console.error("Get audit logs error:", error);
+    res.status(500).json({ error: "Failed to fetch audit logs" });
   }
 };
