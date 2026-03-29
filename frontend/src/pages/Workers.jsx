@@ -204,7 +204,7 @@ const Workers = () => {
     try {
       const today = new Date();
       const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
+
       const startDate = sevenDaysAgo.toISOString().split("T")[0];
       const endDate = today.toISOString().split("T")[0];
 
@@ -462,7 +462,12 @@ const Workers = () => {
                         <tr className="hover:bg-gray-50">
                           <td className="px-4 py-4 whitespace-nowrap text-center">
                             <button
-                              onClick={() => fetchWorkerAttendance(worker.id, worker.full_name)}
+                              onClick={() =>
+                                fetchWorkerAttendance(
+                                  worker.id,
+                                  worker.full_name,
+                                )
+                              }
                               className="text-gray-500 hover:text-primary-600 transition"
                               title="View attendance history"
                             >
@@ -485,64 +490,64 @@ const Workers = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-600">
-                            {worker.position}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">
-                            {worker.payment_type === "monthly"
-                              ? `${worker.monthly_salary || 0} RWF/mo`
-                              : `${worker.rate_per_day || 0} RWF/day`}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              worker.payment_type === "daily"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {t(worker.payment_type)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              worker.payment_type === "monthly" &&
+                              {worker.position}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">
+                              {worker.payment_type === "monthly"
+                                ? `${worker.monthly_salary || 0} RWF/mo`
+                                : `${worker.rate_per_day || 0} RWF/day`}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                worker.payment_type === "daily"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}
+                            >
+                              {t(worker.payment_type)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                worker.payment_type === "monthly" &&
+                                worker.end_date
+                                  ? "bg-red-100 text-red-800"
+                                  : worker.is_active !== false
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {worker.payment_type === "monthly" &&
                               worker.end_date
-                                ? "bg-red-100 text-red-800"
+                                ? t("ended")
                                 : worker.is_active !== false
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {worker.payment_type === "monthly" &&
-                            worker.end_date
-                              ? t("ended")
-                              : worker.is_active !== false
-                                ? t("active")
-                                : t("inactive")}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(worker)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title={t("edit")}
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(worker.id)}
-                              className="text-red-600 hover:text-red-800"
-                              title={t("delete")}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
+                                  ? t("active")
+                                  : t("inactive")}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(worker)}
+                                className="text-blue-600 hover:text-blue-800"
+                                title={t("edit")}
+                              >
+                                <Edit size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(worker.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title={t("delete")}
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
 
                         {/* Attendance History Row */}
@@ -618,7 +623,9 @@ const Workers = () => {
                                   </div>
                                 ) : (
                                   <div className="text-center py-6 text-gray-500">
-                                    <p>No attendance records for the last 7 days</p>
+                                    <p>
+                                      No attendance records for the last 7 days
+                                    </p>
                                   </div>
                                 )}
                               </div>
@@ -756,9 +763,15 @@ const Workers = () => {
                                     {record.days_worked || 0} days
                                   </span>
                                   {record.days_worked > 0 ? (
-                                    <CheckCircle size={14} className="text-green-600" />
+                                    <CheckCircle
+                                      size={14}
+                                      className="text-green-600"
+                                    />
                                   ) : (
-                                    <XCircle size={14} className="text-red-600" />
+                                    <XCircle
+                                      size={14}
+                                      className="text-red-600"
+                                    />
                                   )}
                                 </div>
                               </div>
