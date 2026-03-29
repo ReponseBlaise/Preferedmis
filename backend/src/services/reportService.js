@@ -99,7 +99,7 @@ exports.generatePayrollExcel = async (project_id, start_date, end_date) => {
       : w.monthly_salary;
     const daysInfo = w.payment_type === "daily" 
       ? w.total_days_worked.toFixed(2) 
-      : (payrollData.isMonthComplete ? "1 Month" : "0 Months");
+      : (payrollData.isMonthPayroll ? "1 Month" : "0 Months");
 
     const row = worksheet.addRow({
       full_name: w.full_name,
@@ -308,7 +308,7 @@ exports.generatePayrollPDF = async (project_id, start_date, end_date) => {
       daysDisplay = w.total_days_worked.toFixed(2);
     } else {
       rateDisplay = w.monthly_salary;
-      daysDisplay = isMonthComplete ? "Month" : "0";
+      daysDisplay = isMonthPayroll ? "Month" : "0";
     }
     
     return {
@@ -575,7 +575,7 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
           (sum, w) => sum + w.total_amount,
           0,
         ),
-        isMonthComplete,
+        isMonthPayroll,
       },
     };
   } catch (error) {
