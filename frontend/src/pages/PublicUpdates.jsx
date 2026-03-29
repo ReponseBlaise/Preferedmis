@@ -40,7 +40,7 @@ const PublicUpdates = () => {
       if (filterType !== 'all') params.type = filterType;
       if (filterPriority !== 'all') params.priority = filterPriority;
 
-      const response = await api.updates.getAll(params);
+      const response = await api.getUpdates(params);
       setUpdates(response || []);
     } catch (error) {
       console.error('Error fetching updates:', error);
@@ -59,7 +59,7 @@ const PublicUpdates = () => {
     }
 
     try {
-      await api.updates.create(createForm);
+      await api.createUpdate(createForm);
       toast.success(t('updateCreated'));
       setShowCreateModal(false);
       setCreateForm({
@@ -82,7 +82,7 @@ const PublicUpdates = () => {
     if (!window.confirm(t('confirmDeleteUpdate'))) return;
 
     try {
-      await api.updates.delete(id);
+      await api.deleteUpdate(id);
       toast.success(t('updateDeleted'));
       fetchUpdates();
     } catch (error) {
