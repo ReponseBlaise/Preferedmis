@@ -156,7 +156,8 @@ exports.updateBudget = async (req, res) => {
 
 // Record spending with proper references to workers, inventory, and expenses
 exports.recordSpending = async (req, res) => {
-  try {\n    const {
+  try {
+    const {
       project_id,
       category,
       description,
