@@ -541,7 +541,9 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
               .limit(1)
               .single();
 
-            const rate = historicalRate?.rate_per_day || parseFloat(worker.rate_per_day || 0);
+            const rate =
+              historicalRate?.rate_per_day ||
+              parseFloat(worker.rate_per_day || 0);
             const daysWorked = parseFloat(attendanceRecord.days_worked || 0);
             amount += rate * daysWorked;
             total_days_worked += daysWorked;
@@ -561,7 +563,9 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
               .limit(1)
               .single();
 
-            total_amount = parseFloat(historicalSalary?.monthly_salary || worker.monthly_salary || 0);
+            total_amount = parseFloat(
+              historicalSalary?.monthly_salary || worker.monthly_salary || 0,
+            );
             total_days_worked = 1; // Full month worked
             rateUsed = total_amount;
           } else {
