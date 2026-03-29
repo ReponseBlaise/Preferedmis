@@ -107,7 +107,8 @@ const Reports = () => {
           start_date: startDate,
           end_date: endDate,
         });
-        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         fileName = `payroll_report_${startDate}_${endDate}.xlsx`;
       }
 
@@ -150,7 +151,8 @@ const Reports = () => {
           start_date: startDate,
           end_date: endDate,
         });
-        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         fileName = `inventory_report_${startDate}_${endDate}.xlsx`;
       }
 
@@ -362,7 +364,10 @@ const Reports = () => {
                 </p>
                 <p className="text-2xl font-bold">
                   {(reportData.inventory || [])
-                    .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0)
+                    .reduce(
+                      (sum, item) => sum + parseFloat(item.total_price || 0),
+                      0,
+                    )
                     .toLocaleString()}
                 </p>
               </div>

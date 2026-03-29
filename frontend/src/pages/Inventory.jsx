@@ -165,7 +165,7 @@ const Inventory = () => {
   const exportInventory = async (format = "excel") => {
     try {
       let response, mimeType, fileName;
-      
+
       if (format === "pdf") {
         response = await api.exportInventoryPDF({
           project_id: selectedProject,
@@ -176,10 +176,11 @@ const Inventory = () => {
         response = await api.exportInventoryExcel({
           project_id: selectedProject,
         });
-        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         fileName = `inventory_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
       }
-      
+
       // Use response.data directly since the API already returns a blob
       const blob = new Blob([response.data || response], { type: mimeType });
       const url = window.URL.createObjectURL(blob);

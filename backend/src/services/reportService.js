@@ -363,7 +363,7 @@ exports.generateInventoryPDF = async (project_id, start_date, end_date) => {
     .fontSize(14)
     .fillColor("#000000")
     .text("Inventory Report", { align: "center" });
-  
+
   if (start_date && end_date) {
     doc
       .fontSize(10)
@@ -409,7 +409,7 @@ exports.generateInventoryPDF = async (project_id, start_date, end_date) => {
     doc.fillColor("#000000");
     const itemTotal = parseFloat(item.total_price || 0);
     grandTotal += itemTotal;
-    
+
     doc.text(item.name || "", colX[0], y, { width: 145 });
     doc.text(item.inventory_categories?.name || "", colX[1], y, { width: 105 });
     doc.text(item.quantity.toString(), colX[2], y, { width: 55 });

@@ -139,4 +139,3 @@ exports.exportInventoryPDF = async (req, res) => {
     }
   }
 };
-
