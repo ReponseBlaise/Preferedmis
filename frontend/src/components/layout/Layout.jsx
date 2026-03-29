@@ -111,21 +111,9 @@ const Layout = () => {
       roles: ["manager"],
     },
     {
-      path: "/projects/progress",
-      icon: Target,
-      label: "Project Progress",
-      roles: ["manager"],
-    },
-    {
-      path: "/projects/scheduling",
-      icon: Calendar,
-      label: "Worker Scheduling",
-      roles: ["manager"],
-    },
-    {
-      path: "/projects/budgeting",
+      path: "/projects/manage",
       icon: Wallet,
-      label: "Budget Tracking",
+      label: "Manage Projects",
       roles: ["manager"],
     },
     {
