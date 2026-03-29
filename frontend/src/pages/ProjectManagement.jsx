@@ -154,7 +154,9 @@ const ProjectManagement = () => {
 
   const fetchMilestoneSummary = async () => {
     try {
-      const data = await api.getMilestoneSummary({ project_id: selectedProject });
+      const data = await api.getMilestoneSummary({
+        project_id: selectedProject,
+      });
       setMilestoneSummary(data || {});
     } catch (error) {
       console.error("Failed to load milestone summary");
@@ -412,7 +414,7 @@ const ProjectManagement = () => {
       const d = new Date(
         date.getFullYear(),
         date.getMonth(),
-        i - date.getDay() + 1
+        i - date.getDay() + 1,
       );
       return d;
     });
@@ -420,7 +422,7 @@ const ProjectManagement = () => {
 
   const getSchedulesForDate = (date) => {
     return schedules.filter(
-      (s) => s.schedule_date === date.toISOString().split("T")[0]
+      (s) => s.schedule_date === date.toISOString().split("T")[0],
     );
   };
 
@@ -460,7 +462,8 @@ const ProjectManagement = () => {
           </select>
           {currentProject && (
             <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-              ✓ Currently viewing: <strong>{currentProject.project_name}</strong>
+              ✓ Currently viewing:{" "}
+              <strong>{currentProject.project_name}</strong>
             </p>
           )}
         </div>
@@ -582,13 +585,14 @@ const ProjectManagement = () => {
                           {milestone.title}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Due: {new Date(milestone.due_date).toLocaleDateString()}
+                          Due:{" "}
+                          {new Date(milestone.due_date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                        milestone.status
+                        milestone.status,
                       )}`}
                     >
                       {milestone.status}
@@ -639,7 +643,7 @@ const ProjectManagement = () => {
                       onClick={() => {
                         if (
                           confirm(
-                            "Are you sure you want to delete this milestone?"
+                            "Are you sure you want to delete this milestone?",
                           )
                         ) {
                           api
@@ -650,7 +654,7 @@ const ProjectManagement = () => {
                               fetchMilestoneSummary();
                             })
                             .catch(() =>
-                              toast.error("Failed to delete milestone")
+                              toast.error("Failed to delete milestone"),
                             );
                         }
                       }}
@@ -803,7 +807,7 @@ const ProjectManagement = () => {
               <button
                 onClick={() =>
                   setCurrentDate(
-                    new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+                    new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000),
                   )
                 }
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
@@ -819,7 +823,7 @@ const ProjectManagement = () => {
               <button
                 onClick={() =>
                   setCurrentDate(
-                    new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+                    new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000),
                   )
                 }
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
@@ -896,7 +900,7 @@ const ProjectManagement = () => {
                         d.setDate(d.getDate() - d.getDay() + i);
                         const daySchedules = getSchedulesForDate(d);
                         const workerSchedule = daySchedules.find(
-                          (s) => s.worker_id === worker.id
+                          (s) => s.worker_id === worker.id,
                         );
                         return (
                           <td
@@ -1047,8 +1051,8 @@ const ProjectManagement = () => {
                     alert.alert_type === "critical"
                       ? "bg-red-50 dark:bg-red-900"
                       : alert.alert_type === "warning"
-                      ? "bg-yellow-50 dark:bg-yellow-900"
-                      : "bg-blue-50 dark:bg-blue-900"
+                        ? "bg-yellow-50 dark:bg-yellow-900"
+                        : "bg-blue-50 dark:bg-blue-900"
                   }`}
                 >
                   <AlertTriangle
@@ -1057,8 +1061,8 @@ const ProjectManagement = () => {
                       alert.alert_type === "critical"
                         ? "text-red-600 dark:text-red-400"
                         : alert.alert_type === "warning"
-                        ? "text-yellow-600 dark:text-yellow-400"
-                        : "text-blue-600 dark:text-blue-400"
+                          ? "text-yellow-600 dark:text-yellow-400"
+                          : "text-blue-600 dark:text-blue-400"
                     }
                   />
                   <div>
@@ -1067,15 +1071,15 @@ const ProjectManagement = () => {
                         alert.alert_type === "critical"
                           ? "text-red-800 dark:text-red-200 font-semibold"
                           : alert.alert_type === "warning"
-                          ? "text-yellow-800 dark:text-yellow-200 font-semibold"
-                          : "text-blue-800 dark:text-blue-200 font-semibold"
+                            ? "text-yellow-800 dark:text-yellow-200 font-semibold"
+                            : "text-blue-800 dark:text-blue-200 font-semibold"
                       }
                     >
                       {alert.alert_type === "critical"
                         ? "Critical:"
                         : alert.alert_type === "warning"
-                        ? "Warning:"
-                        : "Info:"}
+                          ? "Warning:"
+                          : "Info:"}
                       {" " + alert.message}
                     </p>
                   </div>
@@ -1231,10 +1235,10 @@ const ProjectManagement = () => {
                               record.category === "labor"
                                 ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
                                 : record.category === "materials"
-                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                                : record.category === "equipment"
-                                ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                  ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                                  : record.category === "equipment"
+                                    ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                             }`}
                           >
                             {record.category}
@@ -1504,7 +1508,9 @@ const ProjectManagement = () => {
                         }
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                       >
-                        <option value="">-- Select expense or leave blank --</option>
+                        <option value="">
+                          -- Select expense or leave blank --
+                        </option>
                         {sourceData.expenses.map((expense) => (
                           <option key={expense.id} value={expense.id}>
                             {expense.expense_type} - ${expense.amount}
