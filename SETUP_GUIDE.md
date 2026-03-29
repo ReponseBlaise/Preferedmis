@@ -33,6 +33,7 @@ node create-admin.js
 ```
 
 Expected output:
+
 ```
 ✅ Admin user created successfully with email: admin@preferred.rw
 ```
@@ -45,6 +46,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
 Server running on port 5000
 ```
@@ -57,6 +59,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
 ➜  Local:   http://localhost:5173/
 ```
@@ -69,6 +72,7 @@ Expected output:
    - Password: `Admin@123`
 
 **Expected Browser Console (F12):**
+
 ```
 [API] Using VITE_API_URL from .env.local http://localhost:5000/api
 [API Request] POST /auth/login
@@ -76,6 +80,7 @@ Expected output:
 ```
 
 **Expected Backend Terminal:**
+
 ```
 [LOGIN] Attempting login for email: admin@preferred.rw
 [LOGIN] User found in database
@@ -92,6 +97,7 @@ Expected output:
 **IMPORTANT:** Your local backend (port 5000 on your computer) is **NOT accessible from the internet** at `https://mis.preferred.rw:5000`.
 
 If you visit `https://mis.preferred.rw` while your local backend is running, the frontend will:
+
 1. Detect HTTPS domain
 2. Try to use Vercel production backend
 3. Get CORS error (production domain isn't whitelisted on Vercel)
@@ -99,13 +105,16 @@ If you visit `https://mis.preferred.rw` while your local backend is running, the
 **Solutions:**
 
 **Option A: Use localhost for development (RECOMMENDED)** ✅
+
 ```bash
 # Always use http://localhost:5173 for local development
 http://localhost:5173
 ```
+
 This is the standard way to develop locally.
 
 **Option B: Expose backend to the internet**
+
 ```bash
 # Install ngrok: https://ngrok.com
 ngrok http 5000
@@ -113,11 +122,13 @@ ngrok http 5000
 ```
 
 Then set in `frontend/.env.local`:
+
 ```
 VITE_API_URL=https://abc123.ngrok.io/api
 ```
 
 **Option C: Use production backend**
+
 - Deploy your backend to Vercel
 - Update CORS whitelist on the Vercel backend to include `https://mis.preferred.rw`
 - Or use the production frontend at `https://preferredmisui.vercel.app`
@@ -158,7 +169,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
 
 1. **Using localhost? (RECOMMENDED)** ✅
    - Use `http://localhost:5173` (NOT `https://`)
-   - Backend at `http://localhost:5000` 
+   - Backend at `http://localhost:5000`
    - Same protocol + localhost = no CORS issues
 
 2. **Using HTTPS domain like `https://mis.preferred.rw`?**
@@ -177,6 +188,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
 **Check these in order:**
 
 1. **Are you using `http://localhost:5173`?** (NOT `https://`)
+
    ```
    ✅ http://localhost:5173
    ❌ https://localhost:5173
@@ -184,6 +196,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
    ```
 
 2. **Is backend running?**
+
    ```bash
    cd backend && npm run dev
    # Should see: Server running on port 5000
@@ -207,6 +220,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
 ### "Nothing is coming from backend"
 
 1. **Is backend actually running?**
+
    ```bash
    # In backend directory
    npm run dev
@@ -220,6 +234,7 @@ curl -X POST http://localhost:5000/api/auth/register-admin \
    - If it says `http://localhost:5000/api`, backend should work
 
 3. **Try curl to test backend directly:**
+
    ```bash
    curl http://localhost:5000/health
    # Should return success
