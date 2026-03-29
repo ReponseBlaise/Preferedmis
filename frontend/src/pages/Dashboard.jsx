@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import {
   BarChart,
@@ -26,6 +27,7 @@ import {
 import toast from "react-hot-toast";
 
 const Dashboard = () => {
+  const { user, isManager, isEmployee, isStoreman } = useAuth();
   const [data, setData] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState("");
@@ -40,14 +42,18 @@ const Dashboard = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (isManager) {
+      fetchProjects();
+    }
+  }, [isManager]);
   useEffect(() => {
     fetchDashboardData();
   }, [selectedProject]);
   useEffect(() => {
-    if (selectedProject) fetchWorkerStats();
-  }, [selectedProject]);
+    if (isManager && selectedProject) {
+      fetchWorkerStats();
+    }
+  }, [isManager, selectedProject]);
 
   const fetchProjects = async () => {
     try {
@@ -90,64 +96,113 @@ const Dashboard = () => {
       </div>
     );
 
-  const stats = [
-    {
-      label: t("activeProjects"),
-      value: data?.stats?.active_projects ?? 0,
-      icon: FolderKanban,
-      color: "bg-blue-500",
-      sub: "Active",
-    },
-    {
-      label: "Total Workers",
-      value: workerStats.total,
-      icon: Users,
-      color: "bg-green-500",
-      sub: `${workerStats.active} active`,
-    },
-    {
-      label: "Daily Workers",
-      value: workerStats.daily,
-      icon: Calendar,
-      color: "bg-cyan-500",
-      sub: "Pay per day",
-    },
-    {
-      label: "Monthly Staff",
-      value: workerStats.monthly,
-      icon: UserCheck,
-      color: "bg-purple-500",
-      sub: "Fixed salary",
-    },
-    {
-      label: t("todayAttendance"),
-      value: data?.stats?.today_attendance ?? 0,
-      icon: Clock,
-      color: "bg-orange-500",
-      sub: "Present today",
-    },
-    {
-      label: t("totalSpent"),
-      value: `${(data?.stats?.total_spent ?? 0).toLocaleString()} RWF`,
-      icon: DollarSign,
-      color: "bg-red-500",
-      sub: "All time",
-    },
-    {
-      label: t("monthlyPayroll"),
-      value: `${(data?.stats?.current_month_payroll ?? 0).toLocaleString()} RWF`,
-      icon: TrendingUp,
-      color: "bg-yellow-500",
-      sub: "This month",
-    },
-    {
-      label: t("unreadMessages"),
-      value: data?.stats?.unread_messages ?? 0,
-      icon: MessageSquare,
-      color: "bg-indigo-500",
-      sub: "Unread",
-    },
-  ];
+  // Build stats array based on user role
+  let stats = [];
+
+  if (isManager) {
+    // Managers see all stats
+    stats = [
+      {
+        label: t("activeProjects"),
+        value: data?.stats?.active_projects ?? 0,
+        icon: FolderKanban,
+        color: "bg-blue-500",
+        sub: "Active",
+      },
+      {
+        label: "Total Workers",
+        value: workerStats.total,
+        icon: Users,
+        color: "bg-green-500",
+        sub: `${workerStats.active} active`,
+      },
+      {
+        label: "Daily Workers",
+        value: workerStats.daily,
+        icon: Calendar,
+        color: "bg-cyan-500",
+        sub: "Pay per day",
+      },
+      {
+        label: "Monthly Staff",
+        value: workerStats.monthly,
+        icon: UserCheck,
+        color: "bg-purple-500",
+        sub: "Fixed salary",
+      },
+      {
+        label: t("todayAttendance"),
+        value: data?.stats?.today_attendance ?? 0,
+        icon: Clock,
+        color: "bg-orange-500",
+        sub: "Present today",
+      },
+      {
+        label: t("totalSpent"),
+        value: `${(data?.stats?.total_spent ?? 0).toLocaleString()} RWF`,
+        icon: DollarSign,
+        color: "bg-red-500",
+        sub: "All time",
+      },
+      {
+        label: t("monthlyPayroll"),
+        value: `${(data?.stats?.current_month_payroll ?? 0).toLocaleString()} RWF`,
+        icon: TrendingUp,
+        color: "bg-yellow-500",
+        sub: "This month",
+      },
+      {
+        label: t("unreadMessages"),
+        value: data?.stats?.unread_messages ?? 0,
+        icon: MessageSquare,
+        color: "bg-indigo-500",
+        sub: "Unread",
+      },
+    ];
+  } else if (isEmployee) {
+    // Employees see limited stats
+    stats = [
+      {
+        label: t("todayAttendance"),
+        value: data?.stats?.today_attendance ?? 0,
+        icon: Clock,
+        color: "bg-orange-500",
+        sub: "Present today",
+      },
+      {
+        label: t("unreadMessages"),
+        value: data?.stats?.unread_messages ?? 0,
+        icon: MessageSquare,
+        color: "bg-indigo-500",
+        sub: "Unread",
+      },
+    ];
+  } else if (isStoreman) {
+    // Storemen see project and inventory-related stats
+    stats = [
+      {
+        label: t("activeProjects"),
+        value: data?.stats?.active_projects ?? 0,
+        icon: FolderKanban,
+        color: "bg-blue-500",
+        sub: "Active",
+      },
+      {
+        label: t("totalSpent"),
+        value: `${(data?.stats?.total_spent ?? 0).toLocaleString()} RWF`,
+        icon: DollarSign,
+        color: "bg-red-500",
+        sub: "All time",
+      },
+      {
+        label: t("unreadMessages"),
+        value: data?.stats?.unread_messages ?? 0,
+        icon: MessageSquare,
+        color: "bg-indigo-500",
+        sub: "Unread",
+      },
+    ];
+  }
 
   return (
     <div className="space-y-6">
@@ -157,12 +212,17 @@ const Dashboard = () => {
             {t("dashboard")}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {selectedProject
-              ? projects.find((p) => p.id === selectedProject)?.name ||
-                "Selected Project"
-              : "Overview of all projects"}
+            {isManager ? (
+              selectedProject
+                ? projects.find((p) => p.id === selectedProject)?.name ||
+                  "Selected Project"
+                : "Overview of all projects"
+            ) : (
+              "Your dashboard"
+            )}
           </p>
         </div>
+        {isManager && (
         <div className="w-full sm:w-auto">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Filter by Project
@@ -180,6 +240,7 @@ const Dashboard = () => {
             ))}
           </select>
         </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -209,8 +270,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Workers breakdown bar */}
-      {selectedProject && (
+      {/* Workers breakdown bar - Only for managers */}
+      {isManager && selectedProject && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             Workers Breakdown
@@ -255,7 +316,8 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts - Only for managers */}
+      {isManager && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-4">
@@ -401,8 +463,10 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      )}
 
-      {/* Recent Activities */}
+      {/* Recent Activities - Only for managers */}
+      {isManager && (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-gray-700">
@@ -476,6 +540,7 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
