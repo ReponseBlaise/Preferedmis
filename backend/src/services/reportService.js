@@ -515,44 +515,74 @@ exports.getPayrollReportData = async (project_id, start_date, end_date) => {
       .gte("attendance_date", adjustedStartDate)
       .lte("attendance_date", adjustedEndDate);
 
-    // Calculate payroll for each worker
-    const workersPayroll = (workers || []).map((worker) => {
-      let total_amount = 0;
-      let total_days_worked = 0;
+    // Calculate payroll for each worker using HISTORICAL rates
+    const workersPayroll = await Promise.all(
+      (workers || []).map(async (worker) => {
+        let total_amount = 0;
+        let total_days_worked = 0;
+        let rateUsed = 0;
 
-      if (worker.payment_type === "daily") {
-        // Daily workers: calculate from attendance
-        const workerAttendance = (attendance || []).filter(
-          (a) => a.worker_id === worker.id,
-        );
-        total_days_worked = workerAttendance.reduce(
-          (sum, a) => sum + parseFloat(a.days_worked || 0),
-          0,
-        );
-        total_amount = parseFloat(worker.rate_per_day || 0) * total_days_worked;
-      } else if (worker.payment_type === "monthly") {
-        // Monthly workers: include salary if it's month-end payroll
-        if (isMonthPayroll) {
-          total_amount = parseFloat(worker.monthly_salary || 0);
-          total_days_worked = 1; // Full month worked
-        } else {
-          total_amount = 0;
-          total_days_worked = 0;
+        if (worker.payment_type === "daily") {
+          // Daily workers: calculate from attendance with historical rates
+          const workerAttendance = (attendance || []).filter(
+            (a) => a.worker_id === worker.id,
+          );
+
+          // Group attendance by rate periods
+          let amount = 0;
+          for (const attendanceRecord of workerAttendance) {
+            const { data: historicalRate } = await supabaseAdmin
+              .from("worker_salary_history")
+              .select("rate_per_day")
+              .eq("worker_id", worker.id)
+              .lte("effective_date", attendanceRecord.attendance_date)
+              .is("end_date", null)
+              .order("effective_date", { ascending: false })
+              .limit(1)
+              .single();
+
+            const rate = historicalRate?.rate_per_day || parseFloat(worker.rate_per_day || 0);
+            const daysWorked = parseFloat(attendanceRecord.days_worked || 0);
+            amount += rate * daysWorked;
+            total_days_worked += daysWorked;
+            rateUsed = rate; // Track last rate for display
+          }
+          total_amount = amount;
+        } else if (worker.payment_type === "monthly") {
+          // Monthly workers: use historical salary if it's month-end payroll
+          if (isMonthPayroll) {
+            const { data: historicalSalary } = await supabaseAdmin
+              .from("worker_salary_history")
+              .select("monthly_salary")
+              .eq("worker_id", worker.id)
+              .lte("effective_date", adjustedEndDate)
+              .is("end_date", null)
+              .order("effective_date", { ascending: false })
+              .limit(1)
+              .single();
+
+            total_amount = parseFloat(historicalSalary?.monthly_salary || worker.monthly_salary || 0);
+            total_days_worked = 1; // Full month worked
+            rateUsed = total_amount;
+          } else {
+            total_amount = 0;
+            total_days_worked = 0;
+          }
         }
-      }
 
-      return {
-        id: worker.id,
-        full_name: worker.full_name,
-        phone: worker.phone,
-        position: worker.position,
-        payment_type: worker.payment_type,
-        rate_per_day: parseFloat(worker.rate_per_day || 0),
-        monthly_salary: parseFloat(worker.monthly_salary || 0),
-        total_days_worked,
-        total_amount,
-      };
-    });
+        return {
+          id: worker.id,
+          full_name: worker.full_name,
+          phone: worker.phone,
+          position: worker.position,
+          payment_type: worker.payment_type,
+          rate_per_day: parseFloat(worker.rate_per_day || 0),
+          monthly_salary: parseFloat(worker.monthly_salary || 0),
+          total_days_worked,
+          total_amount,
+        };
+      }),
+    );
 
     return {
       data: {
