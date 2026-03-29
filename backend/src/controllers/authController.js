@@ -108,8 +108,15 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("[LOGIN] Attempting login for email:", email);
+
+    if (!email || !password) {
+      console.error("[LOGIN] Missing email or password");
+      return res.status(400).json({ error: "Email and password are required" });
+    }
 
     // Get user from database — only safe fields
+    console.log("[LOGIN] Querying user from database...");
     const { data: user, error: userError } = await supabaseAdmin
       .from("users")
       .select("id, email, full_name, phone, role, is_active")
@@ -117,29 +124,42 @@ exports.login = async (req, res) => {
       .eq("is_active", true)
       .single();
 
+    if (userError) {
+      console.error("[LOGIN] Database error:", userError.message);
+    }
+    if (!user) {
+      console.error("[LOGIN] User not found or inactive for email:", email);
+    }
+
     if (userError || !user) {
+      console.error("[LOGIN] User not found, returning 401");
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
     // Verify password with Supabase Auth
+    console.log("[LOGIN] Verifying password with Supabase...");
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      console.error("[LOGIN] Password verification failed:", error.message);
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    console.log("[LOGIN] Password verified, generating JWT...");
     // Generate JWT token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRE,
     });
 
+    console.log("[LOGIN] Login successful for user:", user.email);
     res.json({ token, user });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ error: "Login failed" });
+    console.error("[LOGIN] Unexpected error:", error.message);
+    console.error("[LOGIN] Error details:", error);
+    res.status(500).json({ error: "Login failed: " + error.message });
   }
 };
 
