@@ -588,8 +588,7 @@ const ProjectManagement = () => {
           </select>
           {currentProject && (
             <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-              ✓ Currently viewing:{" "}
-              <strong>{currentProject.name}</strong>
+              ✓ Currently viewing: <strong>{currentProject.name}</strong>
             </p>
           )}
         </div>
@@ -1618,7 +1617,8 @@ const ProjectManagement = () => {
                         <option value="">-- Select an item --</option>
                         {sourceData.inventoryItems.map((item) => (
                           <option key={item.id} value={item.id}>
-                            {item.name} ({formatRWF(item.unit_price)} per {item.unit})
+                            {item.name} ({formatRWF(item.unit_price)} per{" "}
+                            {item.unit})
                           </option>
                         ))}
                       </select>
@@ -1799,7 +1799,9 @@ const ProjectManagement = () => {
                         {formatRWF(item.unit_price)}
                       </td>
                       <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
-                        {formatRWF(item.total_price || item.quantity * item.unit_price)}
+                        {formatRWF(
+                          item.total_price || item.quantity * item.unit_price,
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
@@ -1828,7 +1830,7 @@ const ProjectManagement = () => {
                                   fetchInventoryItems();
                                 })
                                 .catch(() =>
-                                  toast.error("Failed to delete item")
+                                  toast.error("Failed to delete item"),
                                 );
                             }
                           }}
@@ -1896,9 +1898,7 @@ const ProjectManagement = () => {
                             ) : (
                               <ArrowUpRight size={14} />
                             )}
-                            {movement.movement_type === "in"
-                              ? "In"
-                              : "Out"}
+                            {movement.movement_type === "in" ? "In" : "Out"}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right">
