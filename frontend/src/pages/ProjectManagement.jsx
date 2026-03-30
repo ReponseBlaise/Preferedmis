@@ -1301,7 +1301,9 @@ const ProjectManagement = () => {
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       REMAINING BUDGET
                     </div>
-                    <div className={`text-3xl font-bold ${(budgetSummary?.remaining_budget || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <div
+                      className={`text-3xl font-bold ${(budgetSummary?.remaining_budget || 0) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                    >
                       {formatRWF(budgetSummary?.remaining_budget || 0)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -1313,16 +1315,23 @@ const ProjectManagement = () => {
                       BUDGET UTILIZATION
                     </div>
                     <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                      {budgetSummary?.budget_utilization_percent?.toFixed(1) || 0}%
+                      {budgetSummary?.budget_utilization_percent?.toFixed(1) ||
+                        0}
+                      %
                     </div>
                     <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2 mt-2">
-                      <div 
+                      <div
                         className={`h-2 rounded-full transition-all ${
-                          (budgetSummary?.budget_utilization_percent || 0) > 100 ? 'bg-red-500' :
-                          (budgetSummary?.budget_utilization_percent || 0) > 80 ? 'bg-yellow-500' :
-                          'bg-green-500'
+                          (budgetSummary?.budget_utilization_percent || 0) > 100
+                            ? "bg-red-500"
+                            : (budgetSummary?.budget_utilization_percent || 0) >
+                                80
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
                         }`}
-                        style={{width: `${Math.min(budgetSummary?.budget_utilization_percent || 0, 100)}%`}}
+                        style={{
+                          width: `${Math.min(budgetSummary?.budget_utilization_percent || 0, 100)}%`,
+                        }}
                       />
                     </div>
                   </div>
