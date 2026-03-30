@@ -149,32 +149,75 @@ SELECT
     pb.materials_budget,
     pb.equipment_budget,
     pb.contingency_budget,
-    COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0) as total_spent,
-    COALESCE(payroll_spent, 0) as labor_spent,
-    COALESCE(SUM(CASE WHEN bs.category = 'materials' THEN bs.amount ELSE 0 END), 0) as materials_spent,
-    COALESCE(SUM(CASE WHEN bs.category = 'equipment' THEN bs.amount ELSE 0 END), 0) as equipment_spent,
-    COALESCE(SUM(CASE WHEN bs.category = 'other' THEN bs.amount ELSE 0 END), 0) as other_spent,
-    (pb.total_budget - (COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0))) as remaining_budget,
-    ROUND(100 * (COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0)) / NULLIF(pb.total_budget, 0), 2) as budget_utilization_percent,
+    -- Auto-calculated labor from payroll
+    COALESCE(payroll_labor.total_payroll, 0) as labor_spent,
+    -- Auto-calculated materials from inventory outflow  
+    COALESCE(materials_inv.total_materials, 0) as materials_spent,
+    -- Auto-calculated equipment from inventory outflow
+    COALESCE(equipment_inv.total_equipment, 0) as equipment_spent,
+    -- Other costs from expense records
+    COALESCE(other_exp.total_other, 0) as other_spent,
+    -- Manual spending records (user-recorded)
+    COALESCE(manual_spending.total_manual, 0) as manual_spending,
+    -- Total of all spending
+    COALESCE(payroll_labor.total_payroll, 0) + 
+    COALESCE(materials_inv.total_materials, 0) + 
+    COALESCE(equipment_inv.total_equipment, 0) + 
+    COALESCE(other_exp.total_other, 0) +
+    COALESCE(manual_spending.total_manual, 0) as total_spent,
+    -- Remaining budget
+    pb.total_budget - (
+        COALESCE(payroll_labor.total_payroll, 0) + 
+        COALESCE(materials_inv.total_materials, 0) + 
+        COALESCE(equipment_inv.total_equipment, 0) + 
+        COALESCE(other_exp.total_other, 0) +
+        COALESCE(manual_spending.total_manual, 0)
+    ) as remaining_budget,
+    -- Budget utilization percentage
+    ROUND(100 * (
+        COALESCE(payroll_labor.total_payroll, 0) + 
+        COALESCE(materials_inv.total_materials, 0) + 
+        COALESCE(equipment_inv.total_equipment, 0) + 
+        COALESCE(other_exp.total_other, 0) +
+        COALESCE(manual_spending.total_manual, 0)
+    ) / NULLIF(pb.total_budget, 0), 2) as budget_utilization_percent,
     pb.budget_status
 FROM project_budgets pb
 LEFT JOIN (
     SELECT 
         project_id,
-        SUM(amount) as manual_spent
-    FROM budget_spending
+        SUM(amount) as total_payroll
+    FROM attendance_labor_cost
     GROUP BY project_id
-) manual ON pb.project_id = manual.project_id
+) payroll_labor ON pb.project_id = payroll_labor.project_id
 LEFT JOIN (
     SELECT 
         project_id,
-        SUM(amount) as payroll_spent
-    FROM attendance_labor_cost
+        SUM(CASE WHEN category = 'materials' THEN amount ELSE 0 END) as total_materials
+    FROM inventory_usage_cost
     GROUP BY project_id
-) payroll ON pb.project_id = payroll.project_id
-LEFT JOIN budget_spending bs ON pb.project_id = bs.project_id
-GROUP BY pb.id, pb.project_id, pb.total_budget, pb.labor_budget, pb.materials_budget, 
-         pb.equipment_budget, pb.contingency_budget, pb.budget_status, manual_spent, payroll_spent;
+) materials_inv ON pb.project_id = materials_inv.project_id
+LEFT JOIN (
+    SELECT 
+        project_id,
+        SUM(CASE WHEN category = 'equipment' THEN amount ELSE 0 END) as total_equipment
+    FROM inventory_usage_cost
+    GROUP BY project_id
+) equipment_inv ON pb.project_id = equipment_inv.project_id
+LEFT JOIN (
+    SELECT 
+        project_id,
+        SUM(amount) as total_other
+    FROM expenses_cost
+    GROUP BY project_id
+) other_exp ON pb.project_id = other_exp.project_id
+LEFT JOIN (
+    SELECT 
+        project_id,
+        SUM(amount) as total_manual
+    FROM budget_spending
+    GROUP BY project_id
+) manual_spending ON pb.project_id = manual_spending.project_id;
 
 -- Create view for worker schedule summary
 CREATE OR REPLACE VIEW worker_schedule_summary AS

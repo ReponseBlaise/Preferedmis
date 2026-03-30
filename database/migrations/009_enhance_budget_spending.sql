@@ -13,20 +13,49 @@ CREATE INDEX IF NOT EXISTS idx_spending_inventory ON budget_spending(inventory_i
 CREATE INDEX IF NOT EXISTS idx_spending_expense ON budget_spending(expense_id);
 CREATE INDEX IF NOT EXISTS idx_spending_category_date ON budget_spending(category, spending_date);
 
--- Create view to calculate labor costs from attendance (payroll records)
+-- =========================================
+-- AUTO-CALCULATE COSTS FROM VARIOUS SOURCES
+-- =========================================
+
+-- View 1: Calculate labor costs from attendance (payroll records)
 CREATE OR REPLACE VIEW attendance_labor_cost AS
 SELECT 
     a.project_id,
     w.id as worker_id,
     w.full_name as worker_name,
     'labor' as category,
-    SUM(a.hours_worked * w.rate_per_day / 8) as amount,
+    SUM(a.days_worked * w.rate_per_day) as amount,
     CURRENT_DATE as spending_date,
     'Auto-calculated from attendance' as description
 FROM attendance a
 JOIN workers w ON a.worker_id = w.id
-WHERE a.status = 'completed'
 GROUP BY a.project_id, w.id, w.full_name;
+
+-- View 2: Calculate materials/equipment costs from inventory outflow (stock movements)
+CREATE OR REPLACE VIEW inventory_usage_cost AS
+SELECT 
+    sm.project_id,
+    ii.id as inventory_item_id,
+    ii.name as inventory_name,
+    'materials' as category,
+    SUM(sm.quantity * COALESCE(sm.unit_price, ii.unit_price, 0)) as amount,
+    CURRENT_DATE as spending_date,
+    'From stock movements (outflow)' as description
+FROM stock_movements sm
+JOIN inventory_items ii ON sm.inventory_item_id = ii.id
+WHERE sm.movement_type = 'out'
+GROUP BY sm.project_id, ii.id, ii.name;
+
+-- View 3: Get other/miscellaneous expenses
+CREATE OR REPLACE VIEW expenses_cost AS
+SELECT 
+    e.project_id,
+    e.id as expense_id,
+    'other' as category,
+    e.amount,
+    e.expense_date as spending_date,
+    e.description
+FROM expenses e;
 
 -- Create view to get spending with detailed references
 CREATE OR REPLACE VIEW budget_spending_detail AS
