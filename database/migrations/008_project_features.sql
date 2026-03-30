@@ -149,18 +149,32 @@ SELECT
     pb.materials_budget,
     pb.equipment_budget,
     pb.contingency_budget,
-    COALESCE(SUM(bs.amount), 0) as total_spent,
-    COALESCE(SUM(CASE WHEN bs.category = 'labor' THEN bs.amount ELSE 0 END), 0) as labor_spent,
+    COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0) as total_spent,
+    COALESCE(payroll_spent, 0) as labor_spent,
     COALESCE(SUM(CASE WHEN bs.category = 'materials' THEN bs.amount ELSE 0 END), 0) as materials_spent,
     COALESCE(SUM(CASE WHEN bs.category = 'equipment' THEN bs.amount ELSE 0 END), 0) as equipment_spent,
     COALESCE(SUM(CASE WHEN bs.category = 'other' THEN bs.amount ELSE 0 END), 0) as other_spent,
-    (pb.total_budget - COALESCE(SUM(bs.amount), 0)) as remaining_budget,
-    ROUND(100 * COALESCE(SUM(bs.amount), 0) / NULLIF(pb.total_budget, 0), 2) as budget_utilization_percent,
+    (pb.total_budget - (COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0))) as remaining_budget,
+    ROUND(100 * (COALESCE(manual_spent, 0) + COALESCE(payroll_spent, 0)) / NULLIF(pb.total_budget, 0), 2) as budget_utilization_percent,
     pb.budget_status
 FROM project_budgets pb
+LEFT JOIN (
+    SELECT 
+        project_id,
+        SUM(amount) as manual_spent
+    FROM budget_spending
+    GROUP BY project_id
+) manual ON pb.project_id = manual.project_id
+LEFT JOIN (
+    SELECT 
+        project_id,
+        SUM(amount) as payroll_spent
+    FROM attendance_labor_cost
+    GROUP BY project_id
+) payroll ON pb.project_id = payroll.project_id
 LEFT JOIN budget_spending bs ON pb.project_id = bs.project_id
 GROUP BY pb.id, pb.project_id, pb.total_budget, pb.labor_budget, pb.materials_budget, 
-         pb.equipment_budget, pb.contingency_budget, pb.budget_status;
+         pb.equipment_budget, pb.contingency_budget, pb.budget_status, manual_spent, payroll_spent;
 
 -- Create view for worker schedule summary
 CREATE OR REPLACE VIEW worker_schedule_summary AS

@@ -13,6 +13,21 @@ CREATE INDEX IF NOT EXISTS idx_spending_inventory ON budget_spending(inventory_i
 CREATE INDEX IF NOT EXISTS idx_spending_expense ON budget_spending(expense_id);
 CREATE INDEX IF NOT EXISTS idx_spending_category_date ON budget_spending(category, spending_date);
 
+-- Create view to calculate labor costs from attendance (payroll records)
+CREATE OR REPLACE VIEW attendance_labor_cost AS
+SELECT 
+    a.project_id,
+    w.id as worker_id,
+    w.full_name as worker_name,
+    'labor' as category,
+    SUM(a.hours_worked * w.rate_per_day / 8) as amount,
+    CURRENT_DATE as spending_date,
+    'Auto-calculated from attendance' as description
+FROM attendance a
+JOIN workers w ON a.worker_id = w.id
+WHERE a.status = 'completed'
+GROUP BY a.project_id, w.id, w.full_name;
+
 -- Create view to get spending with detailed references
 CREATE OR REPLACE VIEW budget_spending_detail AS
 SELECT 

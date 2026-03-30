@@ -580,11 +580,13 @@ const ProjectManagement = () => {
             onChange={(e) => setSelectedProject(e.target.value)}
             className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-lg dark:bg-gray-800 dark:text-white text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name} {project.is_active ? "" : "(Inactive)"}
-              </option>
-            ))}
+            {projects
+              .filter((p) => p.status === "active")
+              .map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
           </select>
           {currentProject && (
             <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
