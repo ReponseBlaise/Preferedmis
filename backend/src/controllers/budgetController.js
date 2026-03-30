@@ -126,6 +126,13 @@ exports.updateBudget = async (req, res) => {
       notes,
     } = req.body;
 
+    // Validate user has access to this project
+    if (req.userProjects !== "all" && !req.userProjects.includes(project_id)) {
+      return res.status(403).json({
+        error: "You do not have permission to update this project's budget",
+      });
+    }
+
     const updates = {};
     if (total_budget !== undefined) updates.total_budget = total_budget;
     if (labor_budget !== undefined) updates.labor_budget = labor_budget;

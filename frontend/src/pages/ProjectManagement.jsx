@@ -159,11 +159,15 @@ const ProjectManagement = () => {
     try {
       setLoading(true);
       const data = await api.getProjects();
+      console.log("Fetched projects:", data);
       setProjects(data || []);
       if (data && data.length > 0) {
         setSelectedProject(data[0].id);
+      } else {
+        console.warn("No projects returned from API");
       }
     } catch (error) {
+      console.error("Failed to load projects:", error);
       toast.error("Failed to load projects");
     } finally {
       setLoading(false);
@@ -520,6 +524,17 @@ const ProjectManagement = () => {
     }
   };
 
+  // Currency formatter for RWF
+  const formatRWF = (amount) => {
+    if (!amount) return "FRW 0";
+    return new Intl.NumberFormat("rw-RW", {
+      style: "currency",
+      currency: "RWF",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const daysInMonth = (date) => {
     return new Array(42).fill(null).map((_, i) => {
       const d = new Date(
@@ -567,14 +582,14 @@ const ProjectManagement = () => {
           >
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
-                {project.project_name} {project.is_active ? "" : "(Inactive)"}
+                {project.name} {project.is_active ? "" : "(Inactive)"}
               </option>
             ))}
           </select>
           {currentProject && (
             <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
               ✓ Currently viewing:{" "}
-              <strong>{currentProject.project_name}</strong>
+              <strong>{currentProject.name}</strong>
             </p>
           )}
         </div>
