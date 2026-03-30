@@ -93,12 +93,6 @@ const Layout = () => {
       roles: ["manager", "employee", "storeman"],
     },
     {
-      path: "/inventory",
-      icon: Package,
-      label: "Inventory & Stock",
-      roles: ["manager", "storeman"],
-    },
-    {
       path: "/projects",
       icon: FolderKanban,
       label: t("projects"),

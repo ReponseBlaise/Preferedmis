@@ -146,6 +146,8 @@ export default {
     extractData(api.get(`/stock-movements/item/${id}/summary`)),
   getProjectStockMovements: (id, p) =>
     extractData(api.get(`/stock-movements/project/${id}`, { params: p })),
+  recordProjectStockMovement: (d) =>
+    extractData(api.post("/stock-movements", d)),
   deleteStockMovement: (id) =>
     extractData(api.delete(`/stock-movements/${id}`)),
 

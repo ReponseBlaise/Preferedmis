@@ -369,12 +369,11 @@ const ProjectManagement = () => {
 
   const fetchStockMovements = async () => {
     try {
-      const data = await api.getProjectStockMovements({
-        project_id: selectedProject,
-      });
+      const data = await api.getProjectStockMovements(selectedProject);
       setStockMovements(data || []);
     } catch (error) {
       console.error("Failed to fetch stock movements:", error);
+      toast.error("Failed to load stock movements");
     }
   };
 
@@ -1227,11 +1226,10 @@ const ProjectManagement = () => {
                     LABOR BUDGET
                   </div>
                   <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    ${budget.labor_budget?.toLocaleString()}
+                    {formatRWF(budget.labor_budget)}
                   </div>
                   <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Spent: $
-                    {budgetSummary?.labor_spent?.toLocaleString() || "0"}
+                    Spent: {formatRWF(budgetSummary?.labor_spent || 0)}
                   </div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow">
@@ -1239,11 +1237,10 @@ const ProjectManagement = () => {
                     MATERIALS
                   </div>
                   <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    ${budget.materials_budget?.toLocaleString()}
+                    {formatRWF(budget.materials_budget)}
                   </div>
                   <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    Spent: $
-                    {budgetSummary?.materials_spent?.toLocaleString() || "0"}
+                    Spent: {formatRWF(budgetSummary?.materials_spent || 0)}
                   </div>
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-900 p-4 rounded-lg shadow">
@@ -1251,11 +1248,10 @@ const ProjectManagement = () => {
                     EQUIPMENT
                   </div>
                   <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
-                    ${budget.equipment_budget?.toLocaleString()}
+                    {formatRWF(budget.equipment_budget)}
                   </div>
                   <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    Spent: $
-                    {budgetSummary?.equipment_spent?.toLocaleString() || "0"}
+                    Spent: {formatRWF(budgetSummary?.equipment_spent || 0)}
                   </div>
                 </div>
                 <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg shadow">
@@ -1263,11 +1259,10 @@ const ProjectManagement = () => {
                     CONTINGENCY
                   </div>
                   <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                    ${budget.contingency_budget?.toLocaleString()}
+                    {formatRWF(budget.contingency_budget)}
                   </div>
                   <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                    Spent: $
-                    {budgetSummary?.contingency_spent?.toLocaleString() || "0"}
+                    Spent: {formatRWF(budgetSummary?.contingency_spent || 0)}
                   </div>
                 </div>
               </div>
@@ -1370,7 +1365,7 @@ const ProjectManagement = () => {
                           {record.description || "-"}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right">
-                          ${record.amount?.toLocaleString()}
+                          {formatRWF(record.amount)}
                         </td>
                       </tr>
                     ))}
@@ -1608,7 +1603,7 @@ const ProjectManagement = () => {
                         <option value="">-- Select an item --</option>
                         {sourceData.inventoryItems.map((item) => (
                           <option key={item.id} value={item.id}>
-                            {item.name} (${item.unit_price} per {item.unit})
+                            {item.name} ({formatRWF(item.unit_price)} per {item.unit})
                           </option>
                         ))}
                       </select>
@@ -1635,7 +1630,7 @@ const ProjectManagement = () => {
                         </option>
                         {sourceData.expenses.map((expense) => (
                           <option key={expense.id} value={expense.id}>
-                            {expense.expense_type} - ${expense.amount}
+                            {expense.expense_type} - {formatRWF(expense.amount)}
                           </option>
                         ))}
                       </select>
