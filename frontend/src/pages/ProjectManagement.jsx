@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
+import { formatRWF } from "../utils/currency";
 import {
   Plus,
   Edit,
@@ -18,7 +19,9 @@ import {
   TrendingUp,
   BarChart3,
   AlertTriangle,
-  DollarSign,
+  Box,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from "lucide-react";
 
 const ProjectManagement = () => {
@@ -60,6 +63,13 @@ const ProjectManagement = () => {
     expenses: [],
   });
 
+  // Inventory & Stock state
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [stockMovements, setStockMovements] = useState([]);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [editingInventory, setEditingInventory] = useState(null);
+
   // Form states
   const [milestoneForm, setMilestoneForm] = useState({
     title: "",
@@ -96,6 +106,21 @@ const ProjectManagement = () => {
     expense_id: "",
   });
 
+  const [inventoryForm, setInventoryForm] = useState({
+    name: "",
+    quantity: "",
+    unit: "",
+    unit_price: "",
+    category_id: "",
+  });
+
+  const [stockForm, setStockForm] = useState({
+    inventory_item_id: "",
+    movement_type: "in",
+    quantity: "",
+    notes: "",
+  });
+
   // Initial load
   useEffect(() => {
     fetchProjects();
@@ -116,6 +141,9 @@ const ProjectManagement = () => {
         fetchSpending();
         fetchBudgetAlerts();
         loadSourceData();
+      } else if (activeTab === "inventory") {
+        fetchInventoryItems();
+        fetchStockMovements();
       }
     }
   }, [selectedProject, activeTab]);
@@ -328,6 +356,90 @@ const ProjectManagement = () => {
     }
   };
 
+  // ============ INVENTORY FUNCTIONS ============
+  const fetchInventoryItems = async () => {
+    try {
+      const data = await api.getInventoryItems({ project_id: selectedProject });
+      setInventoryItems(data || []);
+    } catch (error) {
+      console.error("Failed to fetch inventory:", error);
+      toast.error("Failed to load inventory items");
+    }
+  };
+
+  const fetchStockMovements = async () => {
+    try {
+      const data = await api.getProjectStockMovements({
+        project_id: selectedProject,
+      });
+      setStockMovements(data || []);
+    } catch (error) {
+      console.error("Failed to fetch stock movements:", error);
+    }
+  };
+
+  const handleSaveInventoryItem = async () => {
+    if (!inventoryForm.name || !inventoryForm.quantity) {
+      toast.error("Name and quantity are required");
+      return;
+    }
+
+    try {
+      if (editingInventory) {
+        await api.updateInventoryItem(editingInventory.id, {
+          ...inventoryForm,
+          project_id: selectedProject,
+        });
+        toast.success("Item updated successfully");
+      } else {
+        await api.createInventoryItem({
+          ...inventoryForm,
+          project_id: selectedProject,
+        });
+        toast.success("Item created successfully");
+      }
+      setShowInventoryModal(false);
+      setInventoryForm({
+        name: "",
+        quantity: "",
+        unit: "",
+        unit_price: "",
+        category_id: "",
+      });
+      setEditingInventory(null);
+      fetchInventoryItems();
+    } catch (error) {
+      toast.error("Failed to save inventory item");
+    }
+  };
+
+  const handleRecordStockMovement = async () => {
+    if (!stockForm.inventory_item_id || !stockForm.quantity) {
+      toast.error("Item and quantity are required");
+      return;
+    }
+
+    try {
+      await api.recordProjectStockMovement({
+        ...stockForm,
+        project_id: selectedProject,
+        quantity: parseFloat(stockForm.quantity),
+      });
+      toast.success("Stock movement recorded");
+      setShowStockModal(false);
+      setStockForm({
+        inventory_item_id: "",
+        movement_type: "in",
+        quantity: "",
+        notes: "",
+      });
+      fetchInventoryItems();
+      fetchStockMovements();
+    } catch (error) {
+      toast.error("Failed to record stock movement");
+    }
+  };
+
   const handleSaveBudget = async () => {
     if (!budgetForm.total_budget) {
       toast.error("Total budget is required");
@@ -499,6 +611,16 @@ const ProjectManagement = () => {
             }`}
           >
             <Wallet size={18} /> Budget Tracking
+          </button>
+          <button
+            onClick={() => setActiveTab("inventory")}
+            className={`px-4 py-3 font-medium flex items-center gap-2 border-b-2 transition ${
+              activeTab === "inventory"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+            }`}
+          >
+            <Box size={18} /> Inventory & Stock
           </button>
         </div>
       </div>
@@ -1097,7 +1219,7 @@ const ProjectManagement = () => {
                     TOTAL BUDGET
                   </div>
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${budget.total_budget?.toLocaleString()}
+                    {formatRWF(budget.total_budget)}
                   </div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow">
@@ -1585,6 +1707,418 @@ const ProjectManagement = () => {
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Record Spending
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* INVENTORY & STOCK TAB */}
+      {activeTab === "inventory" && (
+        <div className="space-y-6">
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setEditingInventory(null);
+                setInventoryForm({
+                  name: "",
+                  quantity: "",
+                  unit: "",
+                  unit_price: "",
+                  category_id: "",
+                });
+                setShowInventoryModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus size={20} /> Add Item
+            </button>
+            <button
+              onClick={() => setShowStockModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Plus size={20} /> Record Movement
+            </button>
+          </div>
+
+          {/* Inventory Items Table */}
+          {inventoryItems.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Box className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500 dark:text-gray-400">
+                No inventory items yet. Add one to get started!
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full bg-white dark:bg-gray-800 rounded-lg">
+                <thead className="bg-gray-100 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                      Name
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                      Unit Price
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                      Total Value
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventoryItems.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="border-t border-gray-200 dark:border-gray-700"
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        {item.quantity} {item.unit}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        {formatRWF(item.unit_price)}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                        {formatRWF(item.total_price || item.quantity * item.unit_price)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => {
+                            setEditingInventory(item);
+                            setInventoryForm({
+                              name: item.name,
+                              quantity: item.quantity,
+                              unit: item.unit,
+                              unit_price: item.unit_price,
+                              category_id: item.category_id,
+                            });
+                            setShowInventoryModal(true);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200"
+                        >
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this item?")) {
+                              api
+                                .deleteInventoryItem(item.id)
+                                .then(() => {
+                                  toast.success("Item deleted");
+                                  fetchInventoryItems();
+                                })
+                                .catch(() =>
+                                  toast.error("Failed to delete item")
+                                );
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 ml-1"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Recent Stock Movements */}
+          {stockMovements.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Recent Stock Movements
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full bg-white dark:bg-gray-800 rounded-lg">
+                  <thead className="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                        Item
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                        Type
+                      </th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                        Quantity
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                        Notes
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockMovements.slice(0, 10).map((movement) => (
+                      <tr
+                        key={movement.id}
+                        className="border-t border-gray-200 dark:border-gray-700"
+                      >
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                          {new Date(movement.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {movement.inventory_item?.name || "Unknown"}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 w-fit ${
+                              movement.movement_type === "in"
+                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                                : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                            }`}
+                          >
+                            {movement.movement_type === "in" ? (
+                              <ArrowDownLeft size={14} />
+                            ) : (
+                              <ArrowUpRight size={14} />
+                            )}
+                            {movement.movement_type === "in"
+                              ? "In"
+                              : "Out"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right">
+                          {movement.quantity}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {movement.notes || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Inventory Modal */}
+          {showInventoryModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {editingInventory ? "Edit Item" : "Add Item"}
+                  </h2>
+                  <button
+                    onClick={() => setShowInventoryModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Item Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={inventoryForm.name}
+                      onChange={(e) =>
+                        setInventoryForm({
+                          ...inventoryForm,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      placeholder="e.g., Cement Bags"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        value={inventoryForm.quantity}
+                        onChange={(e) =>
+                          setInventoryForm({
+                            ...inventoryForm,
+                            quantity: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Unit
+                      </label>
+                      <input
+                        type="text"
+                        value={inventoryForm.unit}
+                        onChange={(e) =>
+                          setInventoryForm({
+                            ...inventoryForm,
+                            unit: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        placeholder="e.g., bags"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Unit Price (RWF)
+                    </label>
+                    <input
+                      type="number"
+                      value={inventoryForm.unit_price}
+                      onChange={(e) =>
+                        setInventoryForm({
+                          ...inventoryForm,
+                          unit_price: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 p-6 border-t border-gray-200 dark:border-gray-700 justify-end">
+                  <button
+                    onClick={() => setShowInventoryModal(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveInventoryItem}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Save Item
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stock Movement Modal */}
+          {showStockModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Record Stock Movement
+                  </h2>
+                  <button
+                    onClick={() => setShowStockModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Item *
+                    </label>
+                    <select
+                      value={stockForm.inventory_item_id}
+                      onChange={(e) =>
+                        setStockForm({
+                          ...stockForm,
+                          inventory_item_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">-- Select an item --</option>
+                      {inventoryItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} (Current: {item.quantity} {item.unit})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Type *
+                      </label>
+                      <select
+                        value={stockForm.movement_type}
+                        onChange={(e) =>
+                          setStockForm({
+                            ...stockForm,
+                            movement_type: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="in">Stock In</option>
+                        <option value="out">Stock Out</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        value={stockForm.quantity}
+                        onChange={(e) =>
+                          setStockForm({
+                            ...stockForm,
+                            quantity: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      value={stockForm.notes}
+                      onChange={(e) =>
+                        setStockForm({
+                          ...stockForm,
+                          notes: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      rows="3"
+                      placeholder="Optional notes"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 p-6 border-t border-gray-200 dark:border-gray-700 justify-end">
+                  <button
+                    onClick={() => setShowStockModal(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRecordStockMovement}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Record Movement
                   </button>
                 </div>
               </div>

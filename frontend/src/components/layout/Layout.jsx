@@ -95,13 +95,7 @@ const Layout = () => {
     {
       path: "/inventory",
       icon: Package,
-      label: t("inventory"),
-      roles: ["manager", "storeman"],
-    },
-    {
-      path: "/stock-movements",
-      icon: TrendingUp,
-      label: "Stock Movements",
+      label: "Inventory & Stock",
       roles: ["manager", "storeman"],
     },
     {
